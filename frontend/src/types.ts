@@ -8,7 +8,6 @@ export type Settings = {
   autoFocus: boolean;
   sound: boolean;
   volume: number;
-  particles: boolean;
   reducedMotion: boolean;
 };
 export type Task = {

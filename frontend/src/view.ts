@@ -24,13 +24,13 @@ export const layout = `
  <div class="night"></div><div class="particles" aria-hidden="true">${Array.from({ length: 28 }, (_, i) => `<i style="--x:${(i * 37 + 11) % 100}%;--y:${(i * 23 + 7) % 100}%;--delay:-${i * 1.7}s;--duration:${18 + (i % 11)}s"></i>`).join("")}</div>
  <header><span class="brand"><span class="brand-mark"></span>pomodoro</span><div class="window-actions">${button("settings", "Configurações", "settings")}${button("compact", "Modo compacto", "compact")}${button("minimize", "Minimizar", "minus")}${button("quit", "Fechar", "close")}</div></header>
  <main><nav aria-label="Modo"><button data-mode="pomodoro">Pomodoro</button><button data-mode="timer">Timer</button><button data-mode="stopwatch">Stopwatch</button></nav>
- <section class="clock"><div class="eyebrow" id="phase">SEU TEMPO, COM INTENÇÃO</div><div id="time" role="timer">25:00</div><div id="subtitle">Um passo de cada vez.</div><div class="progress"><span></span></div><div class="controls">${button("reset", "Reiniciar", "reset")}<button class="primary" data-action="toggle" id="toggle">${icon("play")}<span>Iniciar foco</span></button>${button("skip", "Pular etapa", "skip")}</div><div id="rounds"></div></section>
- <section id="timer-options"><div class="section-label">ESCOLHA UMA DURAÇÃO</div><div class="presets">${[5, 10, 15, 30, 60, 180, 360, 720].map((m) => `<button data-seconds="${m * 60}">${m < 60 ? `${m} min` : `${m / 60} h`}</button>`).join("")}</div><form id="custom-timer"><label>h<input name="hours" type="number" min="0" max="24" value="0" required></label><label>min<input name="minutes" type="number" min="0" max="59" value="0" required></label><label>seg<input name="seconds" type="number" min="0" max="59" value="0" required></label><button type="submit" class="secondary">Definir</button></form></section>
- <section id="tasks-section"><div class="section-heading"><span class="section-label">O QUE VAMOS FAZER?</span><span id="task-count"></span></div><div id="task-list"></div><form id="add-task"><input name="title" aria-label="Nova tarefa" placeholder="Adicionar uma tarefa…" maxlength="180" required autocomplete="off"><input name="estimate" type="number" aria-label="Meta de pomodoros" title="Meta de pomodoros" min="0" max="99" value="1"><button class="icon" aria-label="Adicionar tarefa">${icon("plus")}</button></form><p class="hint">Selecione uma tarefa para dar intenção ao foco.</p></section>
+ <section class="clock"><div class="eyebrow" id="phase">SEU TEMPO, COM INTENÇÃO</div><button id="time" data-action="time-picker" aria-label="Configurar tempo">25:00</button><div id="subtitle">Um passo de cada vez.</div><div class="progress"><span></span></div><div class="controls">${button("reset", "Reiniciar", "reset")}<button class="primary" data-action="toggle" id="toggle">${icon("play")}<span>INICIAR</span></button>${button("skip", "Pular etapa", "skip")}</div><div id="rounds"></div></section>
+ <section id="timer-options"><div class="section-label">ESCOLHA UMA DURAÇÃO</div><div class="presets">${[5, 10, 15, 30, 60, 180, 360, 720].map((m) => `<button data-seconds="${m * 60}">${m < 60 ? `${m} min` : `${m / 60} h`}</button>`).join("")}</div></section>
+ <section id="tasks-section"><div class="section-heading"><span class="section-label">O QUE VAMOS FAZER?</span><span id="task-count"></span></div><div id="task-list"></div><form id="add-task"><input name="title" aria-label="Nova tarefa" placeholder="Adicionar uma tarefa…" maxlength="180" required autocomplete="off"><input name="estimate" type="number" aria-label="Meta de pomodoros" title="Meta de pomodoros" min="0" max="99" value="1"><button class="icon" aria-label="Adicionar tarefa">${icon("plus")}</button></form></section>
  <section id="stopwatch-note"><span class="small-mark">↗</span><h2>No seu ritmo.</h2><p>Cada segundo também conta.</p></section>
- </main><footer><span id="footer-status">PRONTO QUANDO VOCÊ ESTIVER</span><span class="footer-dot"></span></footer>
+ </main>
  <div id="mini"><div class="mini-top"><span id="mini-phase"></span><div>${button("pin", "Sempre por cima", "pin")}${button("compact", "Restaurar janela", "expand")}</div></div><div class="mini-bottom"><strong id="mini-time"></strong><button class="icon" data-action="toggle" id="mini-toggle" aria-label="Iniciar ou pausar"></button></div></div>
- <dialog id="settings"><form id="settings-form"><div class="section-heading"><h2>Seu ritmo</h2>${button("close-settings", "Fechar configurações", "close")}</div><p class="hint">Ajuste o tempo ao seu dia.</p><div class="settings-grid">${[
+ <dialog id="settings"><form id="settings-form"><div class="section-heading"><h2>Configurações</h2>${button("close-settings", "Fechar configurações", "close")}</div><div class="settings-grid">${[
    ["focus", "Foco", 240],
    ["short", "Pausa curta", 120],
    ["long", "Pausa longa", 240],
@@ -44,7 +44,6 @@ export const layout = `
    ["autoBreak", "Iniciar pausas automaticamente"],
    ["autoFocus", "Iniciar focos automaticamente"],
    ["sound", "Som ao concluir"],
-   ["particles", "Partículas no modo de foco"],
    ["reducedMotion", "Reduzir movimento"],
  ]
    .map(
@@ -53,5 +52,17 @@ export const layout = `
    )
    .join(
      "",
-   )}<label class="volume">Volume<input name="volume" type="range" min="0" max="1" step="0.05"></label><p class="hint">Durações alteradas valem para a próxima etapa se a atual já começou.</p><button class="primary save" type="submit">Salvar ajustes</button></form></dialog>
+   )}<label class="volume">Volume<input name="volume" type="range" min="0" max="1" step="0.05"></label><button class="primary save" type="submit">Salvar ajustes</button></form></dialog>
+ <dialog id="time-dialog"><form id="time-form"><h2>Configurar tempo</h2><div class="time-picker">${[
+   ["hours", "Horas", 23],
+   ["minutes", "Minutos", 59],
+   ["seconds", "Segundos", 59],
+ ]
+   .map(
+     ([name, label, max]) =>
+       `<label>${label}<select name="${name}">${Array.from({ length: Number(max) + 1 }, (_, i) => `<option value="${i}">${String(i).padStart(2, "0")}</option>`).join("")}</select></label>`,
+   )
+   .join(
+     "",
+   )}</div><div class="edit-actions"><button type="button" class="secondary" data-action="close-time">Cancelar</button><button class="primary" type="submit">Definir</button></div></form></dialog>
  <dialog id="edit-dialog"><form id="edit-task"><h2>Editar tarefa</h2><input name="title" aria-label="Nome da tarefa" maxlength="180" required><label>Meta de pomodoros<input name="estimate" type="number" min="0" max="99" required></label><div class="edit-actions"><button type="button" class="secondary" data-action="close-edit">Cancelar</button><button class="primary" type="submit">Salvar</button></div></form></dialog><div id="toast" role="status"></div>`;

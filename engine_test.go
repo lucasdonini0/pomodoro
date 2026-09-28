@@ -157,3 +157,36 @@ func TestTaskCreditCannotBeOverwritten(t *testing.T) {
 		t.Fatal("stale UI overwrote credit")
 	}
 }
+
+func TestDurationPicker(t *testing.T) {
+	e := newEngine()
+	now := time.Now()
+	_ = e.command("toggle", "", 0, now)
+	if err := e.command("duration", "pomodoro:focus", 90, now); err != nil {
+		t.Fatal(err)
+	}
+	c := e.Clocks["pomodoro"]
+	if c.Duration != 90 || c.Running || c.Started || c.Elapsed != 0 {
+		t.Fatal("duration was not reset")
+	}
+	if e.Settings.Focus != 25 {
+		t.Fatal("default duration changed")
+	}
+	if e.command("duration", "pomodoro:short", 120, now) == nil {
+		t.Fatal("stale phase accepted")
+	}
+	if e.command("duration", "pomodoro:focus", 0, now) == nil {
+		t.Fatal("zero accepted")
+	}
+	_ = e.command("mode", "timer", 0, now)
+	if err := e.command("duration", "timer:focus", 43200, now); err != nil {
+		t.Fatal(err)
+	}
+	if e.Clocks["timer"].Duration != 43200 {
+		t.Fatal("timer not configured")
+	}
+	_ = e.command("mode", "stopwatch", 0, now)
+	if e.command("duration", "stopwatch:focus", 30, now) == nil {
+		t.Fatal("stopwatch accepted duration")
+	}
+}

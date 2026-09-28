@@ -15,7 +15,6 @@ type Settings struct {
 	AutoFocus     bool    `json:"autoFocus"`
 	Sound         bool    `json:"sound"`
 	Volume        float64 `json:"volume"`
-	Particles     bool    `json:"particles"`
 	ReducedMotion bool    `json:"reducedMotion"`
 }
 
@@ -48,7 +47,7 @@ type Engine struct {
 
 func newEngine() *Engine {
 	return &Engine{
-		Settings: Settings{Focus: 25, Short: 5, Long: 15, Rounds: 4, Sound: true, Volume: 0.4, Particles: true},
+		Settings: Settings{Focus: 25, Short: 5, Long: 15, Rounds: 4, Sound: true, Volume: 0.4},
 		Tasks:    []Task{}, Mode: "pomodoro", Phase: "focus", Round: 1,
 		Clocks: map[string]*Clock{"pomodoro": {Duration: 1500}, "timer": {Duration: 300}, "stopwatch": {}},
 	}
@@ -143,6 +142,14 @@ func (e *Engine) command(action, value string, seconds int, now time.Time) error
 			return errors.New("Use uma duração entre 1 segundo e 24 horas")
 		}
 		e.Clocks["timer"] = &Clock{Duration: float64(seconds)}
+	case "duration":
+		if e.Mode == "stopwatch" || value != e.Mode+":"+e.Phase {
+			return errors.New("A etapa mudou. Abra o seletor novamente")
+		}
+		if seconds < 1 || seconds > 86399 {
+			return errors.New("Escolha um tempo entre 1 segundo e 23:59:59")
+		}
+		e.Clocks[e.Mode] = &Clock{Duration: float64(seconds)}
 	case "select":
 		if e.Phase == "focus" && e.Clocks["pomodoro"].Started {
 			return errors.New("Reinicie o foco antes de trocar a meta")

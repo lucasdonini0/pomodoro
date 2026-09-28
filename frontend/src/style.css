@@ -182,12 +182,47 @@ nav .active:after {
   padding: 14px 0;
 }
 #subtitle {
+  transition: opacity 0.22s ease;
   font-size: 12px;
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-height: 20px;
+}
+#subtitle.fading {
+  opacity: 0;
+}
+#time {
+  padding: 0;
+  display: block;
+  width: 100%;
+}
+#time:hover {
+  background: transparent;
+  color: var(--accent);
+}
+.time-picker {
+  display: flex;
+  gap: 12px;
+  margin: 24px 0;
+}
+.time-picker label {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 9px;
+  font-size: 12px;
+}
+.time-picker select {
+  width: 100%;
+  padding: 12px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #f8f7f4;
+  color: #292731;
+  font: inherit;
+  font-size: 22px;
 }
 .progress {
   height: 2px;
@@ -357,29 +392,7 @@ input::placeholder {
   line-height: 1.6;
   color: var(--muted);
 }
-.empty {
-  font-size: 12px;
-  color: var(--muted);
-  padding: 12px 0;
-}
-footer {
-  padding: 16px 28px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-shrink: 0;
-}
-footer span {
-  font-size: 8px;
-  letter-spacing: 1.35px;
-  color: var(--muted);
-}
-.footer-dot {
-  width: 4px;
-  height: 4px;
-  background: var(--accent);
-  border-radius: 50%;
-}
+
 .presets {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -397,22 +410,7 @@ footer span {
   color: var(--accent);
   background: #8d75ac0d;
 }
-#custom-timer {
-  display: flex;
-  gap: 10px;
-  align-items: flex-end;
-}
-#custom-timer label {
-  font-size: 10px;
-  color: var(--muted);
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-#custom-timer input {
-  width: 65px;
-  color: var(--ink);
-}
+
 .secondary {
   padding: 10px 12px;
   font-size: 11px;
@@ -521,9 +519,7 @@ h2 {
   width: 3px;
   height: 3px;
 }
-.no-particles .particles {
-  display: none;
-}
+
 @keyframes float {
   to {
     transform: translate(15px, -45px);
@@ -642,8 +638,7 @@ dialog::backdrop {
   display: none;
 }
 .compact header,
-.compact main,
-.compact footer {
+.compact main {
   display: none;
 }
 .compact #mini {
@@ -690,4 +685,11 @@ dialog::backdrop {
   bottom: 4px;
   font-size: 10px;
   padding: 6px;
+}
+
+#time:disabled:hover {
+  color: inherit;
+}
+main {
+  padding-bottom: 24px;
 }
