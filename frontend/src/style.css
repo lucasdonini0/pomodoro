@@ -451,7 +451,7 @@ h2 {
     #0a090f 100%
   );
   opacity: 0;
-  transition: opacity 0.8s;
+  transition: opacity 0.9s ease-in-out;
 }
 .night:after {
   content: "";
@@ -488,7 +488,7 @@ h2 {
   pointer-events: none;
   overflow: hidden;
   opacity: 0;
-  transition: opacity 1s;
+  transition: opacity 1.2s ease-in-out;
   z-index: -1;
 }
 .dark .particles {
@@ -521,10 +521,52 @@ h2 {
 }
 
 @keyframes float {
-  to {
-    transform: translate(15px, -45px);
-    opacity: 0.1;
+  from {
+    transform: translate3d(0, 18px, 0);
+    opacity: 0.15;
   }
+  50% {
+    opacity: 0.65;
+  }
+  to {
+    transform: translate3d(var(--drift), -64px, 0);
+    opacity: 0.25;
+  }
+}
+body,
+.icon,
+nav button,
+.eyebrow,
+#time,
+#subtitle,
+.task-title,
+.task-title small,
+.section-label,
+#task-count,
+.hint,
+input,
+.mini-top > span {
+  transition:
+    color 0.8s ease,
+    border-color 0.8s ease,
+    background-color 0.8s ease;
+}
+#subtitle {
+  transition:
+    opacity 0.22s ease,
+    color 0.8s ease;
+}
+.primary,
+.presets button,
+.checkbox,
+.progress,
+#tasks-section,
+.task,
+nav {
+  transition:
+    color 0.8s ease,
+    border-color 0.8s ease,
+    background-color 0.8s ease;
 }
 @media (prefers-reduced-motion: reduce) {
   *,
