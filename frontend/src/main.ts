@@ -49,11 +49,6 @@ function updateMessage() {
   const message = pool[messageIndex++ % pool.length];
   const subtitle = $("#subtitle");
   window.clearTimeout(messageTimeout);
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    subtitle.textContent = message;
-    subtitle.classList.remove("fading");
-    return;
-  }
   subtitle.classList.add("fading");
   messageTimeout = window.setTimeout(() => {
     subtitle.textContent = message;

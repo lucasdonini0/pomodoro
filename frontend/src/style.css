@@ -522,14 +522,14 @@ h2 {
 
 @keyframes float {
   from {
-    transform: translate3d(0, 18px, 0);
+    transform: translate3d(0, 28px, 0);
     opacity: 0.15;
   }
   50% {
     opacity: 0.65;
   }
   to {
-    transform: translate3d(var(--drift), -64px, 0);
+    transform: translate3d(var(--drift), -100px, 0);
     opacity: 0.25;
   }
 }
@@ -567,14 +567,6 @@ nav {
     color 0.8s ease,
     border-color 0.8s ease,
     background-color 0.8s ease;
-}
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *:before,
-  *:after {
-    animation: none !important;
-    transition: none !important;
-  }
 }
 dialog {
   width: calc(100% - 40px);
