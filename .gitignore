@@ -43,3 +43,4 @@ Thumbs.db
 !.env.example
 .tools/
 frontend/wailsjs/
+frontend/package.json.md5
