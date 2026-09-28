@@ -6,6 +6,11 @@
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "auto",
-  "author": { "name": "Lucas" },
-  "info": { "productName": "pomodoro", "productVersion": "0.4.1" }
+  "author": {
+    "name": "Lucas"
+  },
+  "info": {
+    "productName": "pomodoro",
+    "productVersion": "1.0.0"
+  }
 }
