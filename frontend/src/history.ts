@@ -35,6 +35,7 @@ export function setupHistory(api: API) {
   const root = document.querySelector<HTMLElement>("#history")!;
   const element = (id: string) => root.querySelector<HTMLElement>(id)!;
   let selected = midnight(new Date());
+  let lastToday = selected;
   let records: Activity[] = [];
   let loading = false;
   let lastKey = "";
@@ -70,17 +71,25 @@ export function setupHistory(api: API) {
   }
 
   function render() {
+    const today = midnight(new Date());
+    if (+selected === +lastToday || +selected > +today) selected = today;
+    lastToday = today;
     const monday = addDays(selected, -((selected.getDay() + 6) % 7));
-    const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+    const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i)).filter(
+      (date) => +date <= +today,
+    );
     const current = day(selected);
     const key = JSON.stringify([
       +selected,
+      +today,
       records.map((r) => [r.start, r.end.slice(0, 19), r.completed]),
     ]);
     if (key === lastKey) return;
     lastKey = key;
     element("#week-label").textContent =
-      `${dateLabel(monday)} — ${dateLabel(days[6])} · ${days[6].getFullYear()}`;
+      `${dateLabel(monday)} — ${dateLabel(days[days.length - 1])} · ${days[days.length - 1].getFullYear()}`;
+    const next = element('[data-history="next"]') as HTMLButtonElement;
+    next.disabled = +addDays(monday, 7) > +today;
     const maxFocus = Math.max(1, ...days.map((d) => day(d).focus));
     element("#week-days").innerHTML = days
       .map(
@@ -140,11 +149,13 @@ export function setupHistory(api: API) {
     if (button.dataset.history === "previous") selected = addDays(selected, -7);
     if (button.dataset.history === "next") selected = addDays(selected, 7);
     if (button.dataset.history === "today") selected = midnight(new Date());
+    if (+selected > +midnight(new Date())) selected = midnight(new Date());
     render();
   });
 
   async function refresh() {
     if (root.hidden || loading) return;
+    render();
     loading = true;
     try {
       records = await api.History();

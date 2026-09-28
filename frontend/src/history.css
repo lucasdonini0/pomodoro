@@ -24,6 +24,9 @@
   width: 28px;
   border-radius: 4px;
 }
+.week-navigation button:disabled {
+  visibility: hidden;
+}
 #week-days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
