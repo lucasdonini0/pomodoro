@@ -44,7 +44,6 @@ export const layout = `
    ["autoBreak", "Iniciar pausas automaticamente"],
    ["autoFocus", "Iniciar focos automaticamente"],
    ["sound", "Som ao concluir"],
-   ["reducedMotion", "Reduzir movimento"],
  ]
    .map(
      ([name, title]) =>

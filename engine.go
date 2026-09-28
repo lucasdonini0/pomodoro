@@ -7,15 +7,14 @@ import (
 )
 
 type Settings struct {
-	Focus         int     `json:"focus"`
-	Short         int     `json:"short"`
-	Long          int     `json:"long"`
-	Rounds        int     `json:"rounds"`
-	AutoBreak     bool    `json:"autoBreak"`
-	AutoFocus     bool    `json:"autoFocus"`
-	Sound         bool    `json:"sound"`
-	Volume        float64 `json:"volume"`
-	ReducedMotion bool    `json:"reducedMotion"`
+	Focus     int     `json:"focus"`
+	Short     int     `json:"short"`
+	Long      int     `json:"long"`
+	Rounds    int     `json:"rounds"`
+	AutoBreak bool    `json:"autoBreak"`
+	AutoFocus bool    `json:"autoFocus"`
+	Sound     bool    `json:"sound"`
+	Volume    float64 `json:"volume"`
 }
 
 type Task struct {
@@ -43,6 +42,7 @@ type Engine struct {
 	Round    int               `json:"round"`
 	Clocks   map[string]*Clock `json:"clocks"`
 	Bell     int               `json:"bell"`
+	Starts   int               `json:"starts"`
 }
 
 func newEngine() *Engine {
@@ -106,6 +106,9 @@ func (e *Engine) next(now time.Time, completed bool) {
 		duration = e.Settings.Long
 	}
 	running := completed && ((e.Phase == "focus" && e.Settings.AutoFocus) || (e.Phase != "focus" && e.Settings.AutoBreak))
+	if running {
+		e.Starts++
+	}
 	e.Clocks["pomodoro"] = &Clock{Duration: float64(duration * 60), Running: running, Started: running, anchor: now}
 }
 
@@ -126,6 +129,9 @@ func (e *Engine) command(action, value string, seconds int, now time.Time) error
 		if c.Running {
 			c.pause(now)
 		} else {
+			if !c.Started || (e.Mode != "stopwatch" && c.Elapsed >= c.Duration) {
+				e.Starts++
+			}
 			if e.Mode != "stopwatch" && c.Elapsed >= c.Duration {
 				c.Elapsed = 0
 			}

@@ -8,7 +8,6 @@ export type Settings = {
   autoFocus: boolean;
   sound: boolean;
   volume: number;
-  reducedMotion: boolean;
 };
 export type Task = {
   id: string;
@@ -27,6 +26,7 @@ export type State = {
   seconds: number;
   progress: number;
   bell: number;
+  starts: number;
   compact: boolean;
   pinned: boolean;
   warning: string;

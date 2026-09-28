@@ -19,7 +19,7 @@ let lastBell = 0;
 let lastWarning = "";
 let audio: AudioContext | undefined;
 let busy = false;
-let messageKey = "";
+let lastStart = 0;
 let messageIndex = 0;
 let messageTimeout = 0;
 
@@ -40,10 +40,8 @@ const messages = {
 };
 
 function updateMessage() {
-  const key = `${state.mode}:${state.phase}:${state.round}:${state.bell}`;
-  if (key === messageKey) return;
-  const first = !messageKey;
-  messageKey = key;
+  if (state.starts === lastStart) return;
+  lastStart = state.starts;
   const pool =
     state.mode === "pomodoro" && state.phase !== "focus"
       ? messages.rest
@@ -51,11 +49,7 @@ function updateMessage() {
   const message = pool[messageIndex++ % pool.length];
   const subtitle = $("#subtitle");
   window.clearTimeout(messageTimeout);
-  if (
-    first ||
-    state.settings.reducedMotion ||
-    matchMedia("(prefers-reduced-motion: reduce)").matches
-  ) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
     subtitle.textContent = message;
     subtitle.classList.remove("fading");
     return;
@@ -110,7 +104,6 @@ function render() {
     (state.mode === "timer" ? state.seconds > 0 : state.phase === "focus");
   document.body.classList.toggle("dark", dark);
   document.body.classList.toggle("compact", state.compact);
-  document.body.classList.toggle("reduced", state.settings.reducedMotion);
   const phase =
     state.mode === "pomodoro"
       ? { focus: "Foco", short: "Pausa curta", long: "Pausa longa" }[
@@ -234,7 +227,10 @@ document.addEventListener("click", async (event) => {
     await command("timer", "", Number(target.dataset.seconds));
     return;
   }
-  const action = target.dataset.action;
+  const action =
+    target.dataset.action === "time-picker" && state.mode === "pomodoro"
+      ? "settings"
+      : target.dataset.action;
   if (action === "time-picker") {
     if (state.mode === "stopwatch") return;
     const seconds = Math.round(state.clocks[state.mode].duration);

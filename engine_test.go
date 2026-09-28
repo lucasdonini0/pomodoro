@@ -190,3 +190,33 @@ func TestDurationPicker(t *testing.T) {
 		t.Fatal("stopwatch accepted duration")
 	}
 }
+
+func TestMessagesOnlyOnNewStarts(t *testing.T) {
+	e := newEngine()
+	now := time.Now()
+	for _, mode := range []string{"timer", "stopwatch", "pomodoro"} {
+		_ = e.command("mode", mode, 0, now)
+	}
+	if e.Starts != 0 {
+		t.Fatal("navigation counted as a start")
+	}
+	_ = e.command("toggle", "", 0, now)
+	_ = e.command("toggle", "", 0, now)
+	_ = e.command("toggle", "", 0, now)
+	if e.Starts != 1 {
+		t.Fatal("pause or resume counted as a new start")
+	}
+	e.advance(now.Add(25 * time.Minute))
+	if e.Starts != 1 {
+		t.Fatal("waiting break counted as a start")
+	}
+	_ = e.command("toggle", "", 0, now.Add(25*time.Minute))
+	if e.Starts != 2 {
+		t.Fatal("break start not counted")
+	}
+	e.Settings.AutoFocus = true
+	e.advance(now.Add(30 * time.Minute))
+	if e.Starts != 3 {
+		t.Fatal("automatic focus start not counted")
+	}
+}
