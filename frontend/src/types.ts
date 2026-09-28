@@ -36,6 +36,7 @@ export type State = {
   >;
 };
 export type API = {
+  History(): Promise<Activity[]>;
   State(): Promise<State>;
   Command(action: string, value: string, seconds: number): Promise<void>;
   Configure(settings: Settings): Promise<void>;
@@ -44,6 +45,13 @@ export type API = {
   Pin(): Promise<void>;
   Minimize(): Promise<void>;
   Quit(): Promise<void>;
+};
+export type Activity = {
+  start: string;
+  end: string;
+  mode: Mode;
+  focus: boolean;
+  completed: boolean;
 };
 declare global {
   interface Window {

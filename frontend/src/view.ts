@@ -1,3 +1,5 @@
+import { historyLayout } from "./history";
+
 const icons: Record<string, string> = {
   play: '<path d="m8 5 11 7-11 7z"/>',
   pause: '<path d="M8 5v14M16 5v14"/>',
@@ -23,7 +25,8 @@ const button = (action: string, title: string, name: string) =>
 export const layout = `
  <div class="night"></div><div class="particles" aria-hidden="true">${Array.from({ length: 28 }, (_, i) => `<i style="--x:${(i * 37 + 11) % 100}%;--y:${(i * 23 + 7) % 100}%;--delay:-${i * 1.7}s;--duration:${7 + (i % 7)}s;--drift:${(i % 2 ? -1 : 1) * (12 + (i % 17))}px"></i>`).join("")}</div>
  <header><span class="brand"><span class="brand-mark"></span>pomodoro</span><div class="window-actions">${button("settings", "Configurações", "settings")}${button("compact", "Modo compacto", "compact")}${button("minimize", "Minimizar", "minus")}${button("quit", "Fechar", "close")}</div></header>
- <main><nav aria-label="Modo"><button data-mode="pomodoro">Pomodoro</button><button data-mode="timer">Timer</button><button data-mode="stopwatch">Stopwatch</button></nav>
+ <main><nav aria-label="Modo"><button data-mode="pomodoro">Pomodoro</button><button data-mode="timer">Timer</button><button data-mode="stopwatch">Stopwatch</button><button data-action="history">Histórico</button></nav>
+ ${historyLayout}
  <section class="clock"><div class="eyebrow" id="phase">SEU TEMPO, COM INTENÇÃO</div><button id="time" data-action="time-picker" aria-label="Configurar tempo">25:00</button><div id="subtitle">Um passo de cada vez.</div><div class="progress"><span></span></div><div class="controls">${button("reset", "Reiniciar", "reset")}<button class="primary" data-action="toggle" id="toggle">${icon("play")}<span>INICIAR</span></button>${button("skip", "Pular etapa", "skip")}</div><div id="rounds"></div></section>
  <section id="timer-options"><div class="section-label">ESCOLHA UMA DURAÇÃO</div><div class="presets">${[5, 10, 15, 30, 60, 180, 360, 720].map((m) => `<button data-seconds="${m * 60}">${m < 60 ? `${m} min` : `${m / 60} h`}</button>`).join("")}</div></section>
  <section id="tasks-section"><div class="section-heading"><span class="section-label">O QUE VAMOS FAZER?</span><span id="task-count"></span></div><div id="task-list"></div><form id="add-task"><input name="title" aria-label="Nova tarefa" placeholder="Adicionar uma tarefa…" maxlength="180" required autocomplete="off"><input name="estimate" type="number" aria-label="Meta de pomodoros" title="Meta de pomodoros" min="0" max="99" value="1"><button class="icon" aria-label="Adicionar tarefa">${icon("plus")}</button></form></section>

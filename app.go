@@ -24,6 +24,8 @@ type App struct {
 	pinned        bool
 	width, height int
 	done          chan struct{}
+	lastSave      time.Time
+	suspended     bool
 }
 
 type Snapshot struct {
@@ -59,12 +61,16 @@ func (a *App) startup(ctx context.Context) {
 		Settings Settings
 		Tasks    []Task
 		Selected string
+		History  []Activity
 	}
 	if json.Unmarshal(data, &saved) != nil || !saved.Settings.valid() {
 		a.warning = "Os dados salvos estão inválidos."
 		return
 	}
 	a.engine.Settings, a.engine.Selected = saved.Settings, saved.Selected
+	if saved.History != nil {
+		a.engine.History = saved.History
+	}
 	if saved.Tasks != nil {
 		a.engine.Tasks = saved.Tasks
 	}
@@ -76,10 +82,11 @@ func (a *App) save() {
 		return
 	}
 	data, err := json.MarshalIndent(struct {
-		Settings Settings `json:"settings"`
-		Tasks    []Task   `json:"tasks"`
-		Selected string   `json:"selected"`
-	}{a.engine.Settings, a.engine.Tasks, a.engine.Selected}, "", "  ")
+		Settings Settings   `json:"settings"`
+		Tasks    []Task     `json:"tasks"`
+		Selected string     `json:"selected"`
+		History  []Activity `json:"history"`
+	}{a.engine.Settings, a.engine.Tasks, a.engine.Selected, a.engine.History}, "", "  ")
 	if err == nil {
 		err = os.MkdirAll(filepath.Dir(a.path), 0700)
 	}
@@ -93,6 +100,7 @@ func (a *App) save() {
 		a.warning = "Não foi possível salvar as alterações."
 	} else {
 		a.warning = ""
+		a.lastSave = time.Now()
 	}
 }
 
@@ -105,7 +113,7 @@ func (a *App) tick() {
 			a.mu.Lock()
 			bell := a.engine.Bell
 			a.engine.advance(now)
-			if bell != a.engine.Bell {
+			if bell != a.engine.Bell || (a.engine.Clocks[a.engine.Mode].Running && now.Sub(a.lastSave) >= 10*time.Second) {
 				a.save()
 			}
 			a.mu.Unlock()
@@ -115,7 +123,25 @@ func (a *App) tick() {
 	}
 }
 
-func (a *App) shutdown(context.Context) { close(a.done); a.mu.Lock(); defer a.mu.Unlock(); a.save() }
+func (a *App) shutdown(context.Context) {
+	close(a.done)
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.engine.advance(time.Now())
+	a.engine.finish(time.Now(), false)
+	a.save()
+}
+
+func (a *App) History() []Activity {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	bell := a.engine.Bell
+	a.engine.advance(time.Now())
+	if bell != a.engine.Bell {
+		a.save()
+	}
+	return slices.Clone(a.engine.History)
+}
 
 func (a *App) State() Snapshot {
 	a.mu.Lock()

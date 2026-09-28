@@ -1,5 +1,6 @@
 import type { API, Settings, State } from "./types";
 import { icon, layout } from "./view";
+import { setupHistory } from "./history";
 import "./style.css";
 
 const $ = <T extends HTMLElement = HTMLElement>(selector: string) =>
@@ -22,6 +23,8 @@ let busy = false;
 let lastStart = 0;
 let messageIndex = 0;
 let messageTimeout = 0;
+let historyOpen = false;
+let refreshHistory: () => Promise<void>;
 
 const messages = {
   focus: [
@@ -94,11 +97,19 @@ function chime() {
 function render() {
   const c = state.clocks[state.mode];
   const dark =
+    !historyOpen &&
     state.mode !== "stopwatch" &&
     c.started &&
     (state.mode === "timer" ? state.seconds > 0 : state.phase === "focus");
   document.body.classList.toggle("dark", dark);
   document.body.classList.toggle("compact", state.compact);
+  $("#history").hidden = !historyOpen;
+  $(".clock").hidden = historyOpen;
+  $('[data-action="history"]').classList.toggle("active", historyOpen);
+  $('[data-action="history"]').setAttribute(
+    "aria-pressed",
+    String(historyOpen),
+  );
   const phase =
     state.mode === "pomodoro"
       ? { focus: "Foco", short: "Pausa curta", long: "Pausa longa" }[
@@ -143,12 +154,18 @@ function render() {
         ).join("")
       : "";
   document.querySelectorAll<HTMLElement>("[data-mode]").forEach((el) => {
-    el.classList.toggle("active", el.dataset.mode === state.mode);
-    el.setAttribute("aria-pressed", String(el.dataset.mode === state.mode));
+    el.classList.toggle(
+      "active",
+      !historyOpen && el.dataset.mode === state.mode,
+    );
+    el.setAttribute(
+      "aria-pressed",
+      String(!historyOpen && el.dataset.mode === state.mode),
+    );
   });
-  $("#tasks-section").hidden = state.mode !== "pomodoro";
-  $("#timer-options").hidden = state.mode !== "timer";
-  $("#stopwatch-note").hidden = state.mode !== "stopwatch";
+  $("#tasks-section").hidden = historyOpen || state.mode !== "pomodoro";
+  $("#timer-options").hidden = historyOpen || state.mode !== "timer";
+  $("#stopwatch-note").hidden = historyOpen || state.mode !== "stopwatch";
   document
     .querySelectorAll<HTMLElement>("[data-seconds]")
     .forEach((el) =>
@@ -215,6 +232,7 @@ document.addEventListener("click", async (event) => {
   if (!audio) audio = new AudioContext();
   void audio.resume();
   if (target.dataset.mode) {
+    historyOpen = false;
     await command("mode", target.dataset.mode);
     return;
   }
@@ -226,6 +244,13 @@ document.addEventListener("click", async (event) => {
     target.dataset.action === "time-picker" && state.mode === "pomodoro"
       ? "settings"
       : target.dataset.action;
+  if (action === "history") {
+    historyOpen = true;
+    render();
+    await refreshHistory();
+    return;
+  }
+  if (action === "compact") historyOpen = false;
   if (action === "time-picker") {
     if (state.mode === "stopwatch") return;
     const seconds = Math.round(state.clocks[state.mode].duration);
@@ -376,6 +401,7 @@ async function start() {
     return;
   }
   api = window.go.main.App;
+  refreshHistory = setupHistory(api);
   await refresh();
   window.setInterval(() => {
     if (!busy) void refresh().catch(() => {});
