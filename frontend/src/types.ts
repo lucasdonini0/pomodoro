@@ -16,6 +16,15 @@ export type Task = {
   completed: number;
   done: boolean;
 };
+export type Alarm = {
+  id: string;
+  time: string;
+  sound: "suave" | "sinos" | "aurora" | "digital" | "random";
+  volume: number;
+  repeat: boolean;
+  removeAfter: boolean;
+  lastFired: string;
+};
 export type State = {
   settings: Settings;
   tasks: Task[];
@@ -30,6 +39,8 @@ export type State = {
   compact: boolean;
   pinned: boolean;
   warning: string;
+  alarms: Alarm[];
+  activeAlarm: Alarm | null;
   clocks: Record<
     Mode,
     { running: boolean; started: boolean; duration: number }
@@ -41,6 +52,9 @@ export type API = {
   Command(action: string, value: string, seconds: number): Promise<void>;
   Configure(settings: Settings): Promise<void>;
   SaveTasks(tasks: Task[]): Promise<void>;
+  AddAlarm(alarm: Alarm): Promise<void>;
+  RemoveAlarm(id: string): Promise<void>;
+  DismissAlarm(): Promise<void>;
   Compact(): Promise<void>;
   Pin(): Promise<void>;
   Minimize(): Promise<void>;

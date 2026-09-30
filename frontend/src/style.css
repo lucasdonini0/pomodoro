@@ -132,10 +132,10 @@ main {
 nav {
   display: flex;
   border-bottom: 1px solid var(--line);
-  gap: 24px;
+  gap: 15px;
 }
 nav button {
-  font-size: 12px;
+  font-size: 11px;
   padding: 10px 0 13px;
   color: var(--muted);
   position: relative;
@@ -435,6 +435,114 @@ h2 {
 }
 #stopwatch-note p {
   font-size: 12px;
+}
+#alarms {
+  padding: 25px 0;
+}
+.alarm-heading {
+  text-align: center;
+  margin-bottom: 24px;
+}
+.alarm-heading .small-mark svg,
+.ringing-content .small-mark svg {
+  width: 29px;
+  height: 29px;
+}
+.alarm-heading h2 {
+  margin-top: 10px;
+}
+.alarm-heading p {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+#alarm-form {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 17px;
+  background: var(--surface);
+}
+#alarm-form label {
+  font-size: 11px;
+}
+.alarm-time-label,
+.alarm-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.alarm-time-label input {
+  width: 100%;
+  font-size: 25px;
+  font-variant-numeric: tabular-nums;
+  background: #f8f7f4;
+}
+.alarm-controls {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+  margin: 15px 0;
+}
+.alarm-controls label {
+  flex: 1;
+}
+.alarm-controls select {
+  width: 100%;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #f8f7f4;
+  color: #292731;
+  font: inherit;
+}
+.alarm-controls button {
+  height: 35px;
+}
+.alarm-volume {
+  margin: 12px 0 18px;
+}
+.alarm-list-heading {
+  margin: 26px 0 9px;
+}
+.alarm-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  padding: 12px 0;
+}
+.alarm-item > span {
+  flex: 1;
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+}
+.alarm-item small {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.alarm-empty {
+  font-size: 11px;
+  color: var(--muted);
+}
+.ringing-content {
+  text-align: center;
+}
+.ringing-content strong {
+  display: block;
+  margin: 12px 0 0;
+  font-size: 54px;
+  font-weight: 350;
+  font-variant-numeric: tabular-nums;
+}
+.ringing-content p {
+  font-size: 12px;
+  color: var(--muted);
+}
+.ringing-content button {
+  width: 100%;
+  margin-top: 15px;
 }
 .small-mark {
   font-size: 28px;

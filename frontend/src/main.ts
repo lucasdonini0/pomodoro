@@ -1,6 +1,7 @@
-import type { API, Settings, State } from "./types";
+import type { Alarm, API, Settings, State } from "./types";
 import { icon, layout } from "./view";
 import { setupHistory } from "./history";
+import { clickSound, completedSound, startAlarmSound, stopAlarmSound, unlockAudio } from "./audio";
 import "./style.css";
 
 const $ = <T extends HTMLElement = HTMLElement>(selector: string) =>
@@ -18,12 +19,15 @@ let api: API;
 let taskKey = "";
 let lastBell = 0;
 let lastWarning = "";
-let audio: AudioContext | undefined;
 let busy = false;
 let lastStart = 0;
 let messageIndex = 0;
 let messageTimeout = 0;
 let historyOpen = false;
+let alarmsOpen = false;
+let activeAlarmKey = "";
+let alarmExpanding = false;
+let previewTimeout = 0;
 let refreshHistory: () => Promise<void>;
 
 const messages = {
@@ -76,40 +80,28 @@ function format(seconds: number, stopwatch = false) {
 }
 
 function chime() {
-  if (!state.settings.sound || state.settings.volume === 0 || !audio) return;
-  for (let i = 0; i < 2; i++) {
-    const oscillator = audio.createOscillator(),
-      gain = audio.createGain();
-    const start = audio.currentTime + i * 0.3;
-    oscillator.frequency.value = i ? 880 : 660;
-    gain.gain.setValueAtTime(0, start);
-    gain.gain.linearRampToValueAtTime(
-      state.settings.volume * 0.2,
-      start + 0.015,
-    );
-    gain.gain.exponentialRampToValueAtTime(0.001, start + 0.6);
-    oscillator.connect(gain).connect(audio.destination);
-    oscillator.start(start);
-    oscillator.stop(start + 0.6);
-  }
+  if (state.settings.sound) completedSound(state.settings.volume);
 }
 
 function render() {
   const c = state.clocks[state.mode];
   const dark =
-    !historyOpen &&
+    !historyOpen && !alarmsOpen &&
     state.mode !== "stopwatch" &&
     c.started &&
     (state.mode === "timer" ? state.seconds > 0 : state.phase === "focus");
   document.body.classList.toggle("dark", dark);
   document.body.classList.toggle("compact", state.compact);
   $("#history").hidden = !historyOpen;
-  $(".clock").hidden = historyOpen;
+  $("#alarms").hidden = !alarmsOpen;
+  $(".clock").hidden = historyOpen || alarmsOpen;
   $('[data-action="history"]').classList.toggle("active", historyOpen);
   $('[data-action="history"]').setAttribute(
     "aria-pressed",
     String(historyOpen),
   );
+  $('[data-action="alarms"]').classList.toggle("active", alarmsOpen);
+  $('[data-action="alarms"]').setAttribute("aria-pressed", String(alarmsOpen));
   const phase =
     state.mode === "pomodoro"
       ? { focus: "Foco", short: "Pausa curta", long: "Pausa longa" }[
@@ -156,16 +148,16 @@ function render() {
   document.querySelectorAll<HTMLElement>("[data-mode]").forEach((el) => {
     el.classList.toggle(
       "active",
-      !historyOpen && el.dataset.mode === state.mode,
+      !historyOpen && !alarmsOpen && el.dataset.mode === state.mode,
     );
     el.setAttribute(
       "aria-pressed",
-      String(!historyOpen && el.dataset.mode === state.mode),
+      String(!historyOpen && !alarmsOpen && el.dataset.mode === state.mode),
     );
   });
-  $("#tasks-section").hidden = historyOpen || state.mode !== "pomodoro";
-  $("#timer-options").hidden = historyOpen || state.mode !== "timer";
-  $("#stopwatch-note").hidden = historyOpen || state.mode !== "stopwatch";
+  $("#tasks-section").hidden = historyOpen || alarmsOpen || state.mode !== "pomodoro";
+  $("#timer-options").hidden = historyOpen || alarmsOpen || state.mode !== "timer";
+  $("#stopwatch-note").hidden = historyOpen || alarmsOpen || state.mode !== "stopwatch";
   document
     .querySelectorAll<HTMLElement>("[data-seconds]")
     .forEach((el) =>
@@ -179,6 +171,23 @@ function render() {
     taskKey = key;
     renderTasks();
   }
+  renderAlarms();
+  const ringing = $<HTMLDialogElement>("#alarm-ringing");
+  const alarmKey = state.activeAlarm
+    ? `${state.activeAlarm.id}:${state.activeAlarm.lastFired}` : "";
+  if (alarmKey !== activeAlarmKey) {
+    activeAlarmKey = alarmKey;
+    stopAlarmSound();
+    if (state.activeAlarm) {
+      $("#ringing-time").textContent = state.activeAlarm.time;
+      startAlarmSound(state.activeAlarm);
+      if (!ringing.open) ringing.showModal();
+      if (state.compact && !alarmExpanding) {
+        alarmExpanding = true;
+        void api.Compact().then(refresh).catch(() => notify("Não foi possível ampliar a janela.")).finally(() => { alarmExpanding = false; });
+      }
+    } else if (ringing.open) ringing.close();
+  }
   if (state.bell !== lastBell) {
     lastBell = state.bell;
     chime();
@@ -188,6 +197,21 @@ function render() {
         : "Timer concluído.",
     );
   }
+}
+
+function renderAlarms() {
+  const list = $("#alarm-list");
+  const key = JSON.stringify(state.alarms);
+  if (list.dataset.key === key) return;
+  list.dataset.key = key;
+  const names: Record<Alarm["sound"], string> = {
+    suave: "Suave", sinos: "Sinos", aurora: "Aurora", digital: "Digital", random: "Random",
+  };
+  list.innerHTML = state.alarms.length
+    ? [...state.alarms].sort((a, b) => a.time.localeCompare(b.time)).map((alarm) =>
+      `<div class="alarm-item" data-alarm-id="${escape(alarm.id)}"><span>${escape(alarm.time)}<small>${names[alarm.sound]} · ${alarm.repeat ? "repete até desativar" : "toca uma vez"}${alarm.removeAfter ? " · remove após tocar" : " · diário"}</small></span><button class="icon" data-action="remove-alarm" aria-label="Remover despertador das ${escape(alarm.time)}" title="Remover">${icon("trash")}</button></div>`
+    ).join("")
+    : '<p class="alarm-empty">Nenhum despertador adicionado.</p>';
 }
 
 function renderTasks() {
@@ -228,11 +252,12 @@ document.addEventListener("click", async (event) => {
   const target = (event.target as HTMLElement).closest<HTMLButtonElement>(
     "button",
   );
-  if (!target || !state) return;
-  if (!audio) audio = new AudioContext();
-  void audio.resume();
+  if (!target || target.disabled || !state) return;
+  unlockAudio();
+  clickSound(state.settings.volume);
   if (target.dataset.mode) {
     historyOpen = false;
+    alarmsOpen = false;
     await command("mode", target.dataset.mode);
     return;
   }
@@ -246,11 +271,31 @@ document.addEventListener("click", async (event) => {
       : target.dataset.action;
   if (action === "history") {
     historyOpen = true;
+    alarmsOpen = false;
     render();
     await refreshHistory();
     return;
   }
-  if (action === "compact") historyOpen = false;
+  if (action === "alarms") {
+    historyOpen = false;
+    alarmsOpen = true;
+    render();
+    return;
+  }
+  if (action === "compact") { historyOpen = false; alarmsOpen = false; }
+  if (action === "preview-alarm") {
+    window.clearTimeout(previewTimeout);
+    const form = $<HTMLFormElement>("#alarm-form");
+    const data = new FormData(form);
+    startAlarmSound({ id: "preview", time: "", sound: String(data.get("sound")) as Alarm["sound"], volume: Number(data.get("volume")), repeat: false, removeAfter: false, lastFired: "" });
+    previewTimeout = window.setTimeout(stopAlarmSound, 2300);
+    return;
+  }
+  if (action === "dismiss-alarm") { await run(() => api.DismissAlarm()); return; }
+  if (action === "remove-alarm") {
+    await run(() => api.RemoveAlarm(target.closest<HTMLElement>("[data-alarm-id]")!.dataset.alarmId!));
+    return;
+  }
   if (action === "time-picker") {
     if (state.mode === "stopwatch") return;
     const seconds = Math.round(state.clocks[state.mode].duration);
@@ -311,6 +356,27 @@ document.addEventListener("click", async (event) => {
   if (taskAction === "up" && index > 0)
     [tasks[index - 1], tasks[index]] = [tasks[index], tasks[index - 1]];
   await run(() => api.SaveTasks(tasks));
+});
+
+$("#alarm-ringing").addEventListener("cancel", (event) => event.preventDefault());
+$("#alarm-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const form = event.target as HTMLFormElement;
+  const data = new FormData(form);
+  const alarm: Alarm = {
+    id: crypto.randomUUID(),
+    time: String(data.get("time")),
+    sound: String(data.get("sound")) as Alarm["sound"],
+    volume: Number(data.get("volume")),
+    repeat: data.has("repeat"),
+    removeAfter: data.has("removeAfter"),
+    lastFired: "",
+  };
+  void run(async () => {
+    await api.AddAlarm(alarm);
+    form.reset();
+    (form.elements.namedItem("time") as HTMLInputElement).value = alarm.time;
+  });
 });
 
 $("#add-task").addEventListener("submit", (event) => {
@@ -388,7 +454,7 @@ document.addEventListener("keydown", (event) => {
   if (
     event.code !== "Space" ||
     (event.target as HTMLElement).closest("input,button,dialog") ||
-    !state
+    !state || historyOpen || alarmsOpen || !!state.activeAlarm
   )
     return;
   event.preventDefault();

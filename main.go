@@ -17,7 +17,7 @@ func main() {
 	app := newApp()
 	err := wails.Run(&options.App{
 		Title: "pomodoro", Width: 440, Height: 640,
-		MinWidth: 380, MinHeight: 560, Frameless: true,
+		DisableResize: true, Frameless: true,
 		BackgroundColour: options.NewRGB(248, 247, 244),
 		AssetServer:      &assetserver.Options{Assets: assets},
 		OnStartup:        app.startup, OnShutdown: app.shutdown,

@@ -22,23 +22,27 @@ type App struct {
 	warning       string
 	compact       bool
 	pinned        bool
-	width, height int
 	done          chan struct{}
 	lastSave      time.Time
 	suspended     bool
+	alarms        []Alarm
+	activeAlarm   *Alarm
+	pendingAlarms []Alarm
 }
 
 type Snapshot struct {
 	*Engine
-	Seconds  float64 `json:"seconds"`
-	Progress float64 `json:"progress"`
-	Compact  bool    `json:"compact"`
-	Pinned   bool    `json:"pinned"`
-	Warning  string  `json:"warning"`
+	Seconds     float64 `json:"seconds"`
+	Progress    float64 `json:"progress"`
+	Compact     bool    `json:"compact"`
+	Pinned      bool    `json:"pinned"`
+	Warning     string  `json:"warning"`
+	Alarms      []Alarm `json:"alarms"`
+	ActiveAlarm *Alarm  `json:"activeAlarm"`
 }
 
 func newApp() *App {
-	return &App{engine: newEngine(), width: 440, height: 640, done: make(chan struct{})}
+	return &App{engine: newEngine(), alarms: []Alarm{}, done: make(chan struct{})}
 }
 
 func (a *App) startup(ctx context.Context) {
@@ -62,6 +66,7 @@ func (a *App) startup(ctx context.Context) {
 		Tasks    []Task
 		Selected string
 		History  []Activity
+		Alarms   []Alarm
 	}
 	if json.Unmarshal(data, &saved) != nil || !saved.Settings.valid() {
 		a.warning = "Os dados salvos estão inválidos."
@@ -73,6 +78,11 @@ func (a *App) startup(ctx context.Context) {
 	}
 	if saved.Tasks != nil {
 		a.engine.Tasks = saved.Tasks
+	}
+	for _, alarm := range saved.Alarms {
+		if alarm.valid() {
+			a.alarms = append(a.alarms, alarm)
+		}
 	}
 	a.engine.Clocks["pomodoro"].Duration = float64(saved.Settings.Focus * 60)
 }
@@ -86,7 +96,8 @@ func (a *App) save() {
 		Tasks    []Task     `json:"tasks"`
 		Selected string     `json:"selected"`
 		History  []Activity `json:"history"`
-	}{a.engine.Settings, a.engine.Tasks, a.engine.Selected, a.engine.History}, "", "  ")
+		Alarms   []Alarm    `json:"alarms"`
+	}{a.engine.Settings, a.engine.Tasks, a.engine.Selected, a.engine.History, a.alarms}, "", "  ")
 	if err == nil {
 		err = os.MkdirAll(filepath.Dir(a.path), 0700)
 	}
@@ -113,10 +124,14 @@ func (a *App) tick() {
 			a.mu.Lock()
 			bell := a.engine.Bell
 			a.engine.advance(now)
-			if bell != a.engine.Bell || (a.engine.Clocks[a.engine.Mode].Running && now.Sub(a.lastSave) >= 10*time.Second) {
+			alarmDue := a.checkAlarms(now)
+			if bell != a.engine.Bell || alarmDue || (a.engine.Clocks[a.engine.Mode].Running && now.Sub(a.lastSave) >= 10*time.Second) {
 				a.save()
 			}
 			a.mu.Unlock()
+			if alarmDue {
+				runtime.WindowUnminimise(a.ctx)
+			}
 		case <-a.done:
 			return
 		}
@@ -166,7 +181,12 @@ func (a *App) State() Snapshot {
 		value := *clock
 		copy.Clocks[mode] = &value
 	}
-	return Snapshot{&copy, seconds, progress, a.compact, a.pinned, a.warning}
+	var active *Alarm
+	if a.activeAlarm != nil {
+		value := *a.activeAlarm
+		active = &value
+	}
+	return Snapshot{&copy, seconds, progress, a.compact, a.pinned, a.warning, slices.Clone(a.alarms), active}
 }
 
 func (a *App) Command(action, value string, seconds int) error {
@@ -234,13 +254,10 @@ func (a *App) Compact() {
 	defer a.mu.Unlock()
 	a.compact = !a.compact
 	if a.compact {
-		a.width, a.height = runtime.WindowGetSize(a.ctx)
-		runtime.WindowSetMinSize(a.ctx, 320, 110)
 		runtime.WindowSetSize(a.ctx, 320, 110)
 		a.pinned = true
 	} else {
-		runtime.WindowSetMinSize(a.ctx, 380, 560)
-		runtime.WindowSetSize(a.ctx, a.width, a.height)
+		runtime.WindowSetSize(a.ctx, 440, 640)
 		a.pinned = false
 	}
 	runtime.WindowSetAlwaysOnTop(a.ctx, a.pinned)
