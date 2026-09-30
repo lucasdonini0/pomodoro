@@ -125,17 +125,21 @@ header {
 }
 main {
   flex: 1;
+  min-width: 0;
   overflow: auto;
+  overflow-x: hidden;
   padding: 10px 28px 0;
   scrollbar-width: thin;
 }
 nav {
   display: flex;
+  justify-content: space-between;
   border-bottom: 1px solid var(--line);
-  gap: 15px;
+  gap: 8px;
 }
 nav button {
   font-size: 11px;
+  white-space: nowrap;
   padding: 10px 0 13px;
   color: var(--muted);
   position: relative;
@@ -437,51 +441,78 @@ h2 {
   font-size: 12px;
 }
 #alarms {
-  padding: 25px 0;
+  padding-bottom: 20px;
 }
-.alarm-heading {
+.alarm-display {
   text-align: center;
-  margin-bottom: 24px;
+  padding: 28px 0 18px;
 }
-.alarm-heading .small-mark svg,
-.ringing-content .small-mark svg {
-  width: 29px;
-  height: 29px;
+.alarm-time-input {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  color: var(--ink);
+  font-size: 78px;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -4px;
+  line-height: 1.24;
+  margin: 8px 0 1px;
 }
-.alarm-heading h2 {
-  margin-top: 10px;
+.alarm-time-input select {
+  width: 2ch;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  letter-spacing: inherit;
+  appearance: none;
+  cursor: pointer;
+  text-align: center;
+  padding: 0;
 }
-.alarm-heading p {
-  font-size: 11px;
+.alarm-time-input select:hover {
+  color: var(--accent);
+}
+.alarm-time-input option {
+  font-size: 18px;
+  color: #292731;
+}
+.alarm-subtitle {
+  font-size: 12px;
   color: var(--muted);
-  line-height: 1.5;
+  min-height: 20px;
 }
-#alarm-form {
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  padding: 17px;
-  background: var(--surface);
+.alarm-display .progress span {
+  width: 100%;
+}
+.alarm-display .progress {
+  margin: 16px auto;
+}
+.alarm-display .primary {
+  min-width: 148px;
+}
+.alarm-options {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
 }
 #alarm-form label {
   font-size: 11px;
 }
-.alarm-time-label,
 .alarm-controls label {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: 7px;
-}
-.alarm-time-label input {
-  width: 100%;
-  font-size: 25px;
-  font-variant-numeric: tabular-nums;
-  background: #f8f7f4;
 }
 .alarm-controls {
   display: flex;
   gap: 10px;
   align-items: end;
-  margin: 15px 0;
+  margin: 12px 0;
 }
 .alarm-controls label {
   flex: 1;
@@ -499,10 +530,19 @@ h2 {
   height: 35px;
 }
 .alarm-volume {
-  margin: 12px 0 18px;
+  margin: 12px 0 14px;
+}
+.alarm-options .switch-row {
+  margin: 10px 0;
 }
 .alarm-list-heading {
-  margin: 26px 0 9px;
+  border-top: 1px solid var(--line);
+  padding-top: 15px;
+  margin: 14px 0 5px;
+}
+#alarm-count {
+  font-size: 10px;
+  color: var(--muted);
 }
 .alarm-item {
   display: flex;
@@ -525,6 +565,13 @@ h2 {
 .alarm-empty {
   font-size: 11px;
   color: var(--muted);
+}
+.alarm-hint {
+  margin-top: 14px;
+}
+.ringing-content .small-mark svg {
+  width: 29px;
+  height: 29px;
 }
 .ringing-content {
   text-align: center;

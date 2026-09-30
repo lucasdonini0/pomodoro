@@ -23,7 +23,18 @@ func (alarm Alarm) valid() bool {
 	if _, err := time.Parse("15:04", alarm.Time); err != nil {
 		return false
 	}
-	return slices.Contains([]string{"suave", "sinos", "aurora", "digital", "random"}, alarm.Sound)
+	return slices.Contains([]string{"alerta", "sirene", "campainha", "random"}, alarm.Sound)
+}
+
+func (alarm *Alarm) migrateSound() {
+	switch alarm.Sound {
+	case "suave", "digital":
+		alarm.Sound = "alerta"
+	case "sinos":
+		alarm.Sound = "campainha"
+	case "aurora":
+		alarm.Sound = "sirene"
+	}
 }
 
 // checkAlarms runs on the Go ticker, including while the window is minimised.

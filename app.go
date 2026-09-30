@@ -80,6 +80,7 @@ func (a *App) startup(ctx context.Context) {
 		a.engine.Tasks = saved.Tasks
 	}
 	for _, alarm := range saved.Alarms {
+		alarm.migrateSound()
 		if alarm.valid() {
 			a.alarms = append(a.alarms, alarm)
 		}

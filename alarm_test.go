@@ -7,7 +7,7 @@ import (
 
 func TestAlarmFiresOncePerDayAndRemovesAfterDismissal(t *testing.T) {
 	app := newApp()
-	alarm := Alarm{ID: "one", Time: "07:30", Sound: "suave", Volume: 0.6, Repeat: true, RemoveAfter: true}
+	alarm := Alarm{ID: "one", Time: "07:30", Sound: "alerta", Volume: 0.6, Repeat: true, RemoveAfter: true}
 	if err := app.AddAlarm(alarm); err != nil {
 		t.Fatal(err)
 	}
@@ -24,6 +24,18 @@ func TestAlarmFiresOncePerDayAndRemovesAfterDismissal(t *testing.T) {
 	app.DismissAlarm()
 	if app.activeAlarm != nil {
 		t.Fatal("alarm should stop when dismissed")
+	}
+}
+
+func TestOldAlarmSoundsAreMigrated(t *testing.T) {
+	for old, want := range map[string]string{
+		"suave": "alerta", "digital": "alerta", "sinos": "campainha", "aurora": "sirene",
+	} {
+		alarm := Alarm{ID: "old", Time: "09:00", Sound: old, Volume: 0.5}
+		alarm.migrateSound()
+		if alarm.Sound != want || !alarm.valid() {
+			t.Errorf("sound %q was not migrated to %q", old, want)
+		}
 	}
 }
 

@@ -17,14 +17,18 @@ function note(
   volume: number,
   output: AudioNode,
   wave: OscillatorType = "sine",
+  endFrequency?: number,
+  sustain = false,
 ) {
   const audio = ready();
   const oscillator = audio.createOscillator();
   const gain = audio.createGain();
   oscillator.type = wave;
   oscillator.frequency.setValueAtTime(frequency, start);
+  if (endFrequency) oscillator.frequency.linearRampToValueAtTime(endFrequency, start + duration * 0.85);
   gain.gain.setValueAtTime(0.0001, start);
-  gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, volume), start + 0.025);
+  gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, volume), start + 0.02);
+  if (sustain) gain.gain.setValueAtTime(Math.max(0.0001, volume), start + duration * 0.7);
   gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
   oscillator.connect(gain).connect(output);
   oscillator.start(start);
@@ -52,12 +56,7 @@ export function completedSound(volume: number) {
   }
 }
 
-const melodies: Record<string, number[]> = {
-  suave: [523, 659, 784, 659],
-  sinos: [784, 988, 1175, 988],
-  aurora: [440, 554, 659, 880],
-  digital: [698, 698, 932, 932],
-};
+const alarmSounds = ["alerta", "sirene", "campainha"] as const;
 
 export function stopAlarmSound() {
   window.clearInterval(alarmInterval);
@@ -78,19 +77,28 @@ export function startAlarmSound(alarm: Alarm) {
   bus.gain.value = 1;
   bus.connect(audio.destination);
   alarmBus = bus;
-  const names = Object.keys(melodies);
   const sound = alarm.sound === "random"
-    ? names[Math.floor(Math.random() * names.length)]
+    ? alarmSounds[Math.floor(Math.random() * alarmSounds.length)]
     : alarm.sound;
-  const melody = melodies[sound] ?? melodies.suave;
   const play = () => {
     const start = audio.currentTime + 0.04;
-    melody.forEach((frequency, index) => {
-      const offset = index * 0.42;
-      note(frequency, start + offset, 0.7, alarm.volume * 0.19, bus);
-      if (sound === "sinos") note(frequency * 2, start + offset, 0.45, alarm.volume * 0.045, bus);
-    });
+    if (sound === "sirene") {
+      for (const offset of [0, 0.9]) {
+        note(620, start + offset, 0.78, alarm.volume * 0.42, bus, "sawtooth", 1120, true);
+        note(310, start + offset, 0.78, alarm.volume * 0.11, bus, "square", 560, true);
+      }
+    } else if (sound === "campainha") {
+      for (const offset of [0, 0.35, 1.05, 1.4]) {
+        note(880, start + offset, 0.48, alarm.volume * 0.4, bus, "sawtooth");
+        note(1320, start + offset, 0.42, alarm.volume * 0.19, bus);
+      }
+    } else {
+      [0, 0.23, 0.46, 1.02, 1.25, 1.48].forEach((offset, index) => {
+        note(index % 3 === 2 ? 1040 : 880, start + offset, 0.19, alarm.volume * 0.48, bus, "square", undefined, true);
+        note(440, start + offset, 0.19, alarm.volume * 0.12, bus, "sine", undefined, true);
+      });
+    }
   };
   play();
-  if (alarm.repeat) alarmInterval = window.setInterval(play, 2600);
+  if (alarm.repeat) alarmInterval = window.setInterval(play, 2500);
 }

@@ -201,11 +201,12 @@ function render() {
 
 function renderAlarms() {
   const list = $("#alarm-list");
+  $("#alarm-count").textContent = String(state.alarms.length);
   const key = JSON.stringify(state.alarms);
   if (list.dataset.key === key) return;
   list.dataset.key = key;
   const names: Record<Alarm["sound"], string> = {
-    suave: "Suave", sinos: "Sinos", aurora: "Aurora", digital: "Digital", random: "Random",
+    alerta: "Alerta", sirene: "Sirene", campainha: "Campainha", random: "Random",
   };
   list.innerHTML = state.alarms.length
     ? [...state.alarms].sort((a, b) => a.time.localeCompare(b.time)).map((alarm) =>
@@ -288,7 +289,7 @@ document.addEventListener("click", async (event) => {
     const form = $<HTMLFormElement>("#alarm-form");
     const data = new FormData(form);
     startAlarmSound({ id: "preview", time: "", sound: String(data.get("sound")) as Alarm["sound"], volume: Number(data.get("volume")), repeat: false, removeAfter: false, lastFired: "" });
-    previewTimeout = window.setTimeout(stopAlarmSound, 2300);
+    previewTimeout = window.setTimeout(stopAlarmSound, 2500);
     return;
   }
   if (action === "dismiss-alarm") { await run(() => api.DismissAlarm()); return; }
@@ -365,7 +366,7 @@ $("#alarm-form").addEventListener("submit", (event) => {
   const data = new FormData(form);
   const alarm: Alarm = {
     id: crypto.randomUUID(),
-    time: String(data.get("time")),
+    time: `${data.get("hours")}:${data.get("minutes")}`,
     sound: String(data.get("sound")) as Alarm["sound"],
     volume: Number(data.get("volume")),
     repeat: data.has("repeat"),
@@ -375,7 +376,8 @@ $("#alarm-form").addEventListener("submit", (event) => {
   void run(async () => {
     await api.AddAlarm(alarm);
     form.reset();
-    (form.elements.namedItem("time") as HTMLInputElement).value = alarm.time;
+    (form.elements.namedItem("hours") as HTMLSelectElement).value = alarm.time.slice(0, 2);
+    (form.elements.namedItem("minutes") as HTMLSelectElement).value = alarm.time.slice(3);
   });
 });
 

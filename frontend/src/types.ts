@@ -19,7 +19,7 @@ export type Task = {
 export type Alarm = {
   id: string;
   time: string;
-  sound: "suave" | "sinos" | "aurora" | "digital" | "random";
+  sound: "alerta" | "sirene" | "campainha" | "random";
   volume: number;
   repeat: boolean;
   removeAfter: boolean;
