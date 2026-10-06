@@ -20,6 +20,7 @@ type App struct {
 	engine        *Engine
 	path          string
 	warning       string
+	dataReadOnly  bool
 	compact       bool
 	pinned        bool
 	done          chan struct{}
@@ -58,6 +59,7 @@ func (a *App) startup(ctx context.Context) {
 	if err != nil {
 		if !os.IsNotExist(err) {
 			a.warning = "Não foi possível carregar os dados salvos."
+			a.dataReadOnly = true
 		}
 		return
 	}
@@ -70,8 +72,18 @@ func (a *App) startup(ctx context.Context) {
 		TimerDeepWork bool
 	}
 	if json.Unmarshal(data, &saved) != nil || !saved.Settings.valid() {
-		a.warning = "Os dados salvos estão inválidos."
+		a.warning = "Os dados salvos estão inválidos e foram preservados."
+		a.dataReadOnly = true
 		return
+	}
+	if backup, err := os.ReadFile(a.path + ".bak"); err == nil {
+		var previous struct {
+			History []Activity `json:"history"`
+		}
+		if json.Unmarshal(backup, &previous) == nil && len(previous.History) > len(saved.History) {
+			saved.History = previous.History
+			a.warning = "Histórico recuperado da cópia de segurança."
+		}
 	}
 	a.engine.Settings, a.engine.Selected = saved.Settings, saved.Selected
 	a.engine.TimerDeepWork = saved.TimerDeepWork
@@ -91,7 +103,7 @@ func (a *App) startup(ctx context.Context) {
 }
 
 func (a *App) save() {
-	if a.path == "" {
+	if a.path == "" || a.dataReadOnly {
 		return
 	}
 	data, err := json.MarshalIndent(struct {
@@ -102,6 +114,37 @@ func (a *App) save() {
 		Alarms        []Alarm    `json:"alarms"`
 		TimerDeepWork bool       `json:"timerDeepWork"`
 	}{a.engine.Settings, a.engine.Tasks, a.engine.Selected, a.engine.History, a.alarms, a.engine.TimerDeepWork}, "", "  ")
+	if err == nil {
+		var previous []byte
+		previous, err = os.ReadFile(a.path)
+		if os.IsNotExist(err) {
+			err = nil
+		} else if err == nil {
+			var old struct {
+				History []Activity `json:"history"`
+			}
+			if json.Unmarshal(previous, &old) != nil || len(old.History) > len(a.engine.History) {
+				a.warning = "Histórico existente preservado. Não foi possível salvar."
+				a.dataReadOnly = true
+				return
+			}
+			backupCount := -1
+			if backup, readErr := os.ReadFile(a.path + ".bak"); readErr == nil {
+				var archived struct {
+					History []Activity `json:"history"`
+				}
+				if json.Unmarshal(backup, &archived) == nil {
+					backupCount = len(archived.History)
+				}
+			}
+			if len(old.History) > backupCount {
+				err = os.WriteFile(a.path+".bak.tmp", previous, 0600)
+				if err == nil {
+					err = os.Rename(a.path+".bak.tmp", a.path+".bak")
+				}
+			}
+		}
+	}
 	if err == nil {
 		err = os.MkdirAll(filepath.Dir(a.path), 0700)
 	}

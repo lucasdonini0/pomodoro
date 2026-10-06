@@ -403,26 +403,50 @@ input::placeholder {
   gap: 7px;
   margin: 13px 0 20px;
 }
-.timer-work-switch {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  padding: 3px;
-  margin-top: 12px;
+.timer-work-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 22px;
 }
-.timer-work-switch button {
-  border-radius: 3px;
-  padding: 10px 0;
+.timer-work-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0 5px 8px;
+  border-radius: 4px;
   font-size: 11px;
   color: var(--muted);
 }
-.timer-work-switch button.active {
-  background: var(--accent);
-  color: #fff;
+.timer-work-switch.deep > span:last-child,
+.timer-work-switch:not(.deep) > span:first-child {
+  color: var(--ink);
+  font-weight: 600;
 }
-.timer-work-hint {
-  margin: 7px 0 22px;
+.timer-work-track {
+  width: 36px;
+  height: 20px;
+  flex: none;
+  border-radius: 999px;
+  background: #b8b2c0;
+  padding: 2px;
+  transition: background 0.18s ease;
+}
+.timer-work-thumb {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px #0003;
+  transition: transform 0.18s ease;
+}
+.timer-work-switch.deep .timer-work-track {
+  background: var(--accent);
+}
+.timer-work-switch.deep .timer-work-thumb {
+  transform: translateX(16px);
 }
 .presets button {
   border: 1px solid var(--line);
@@ -657,9 +681,6 @@ h2 {
 }
 .dark .primary:hover {
   background: #d1bfe8;
-}
-.dark .timer-work-switch button.active {
-  color: #241633;
 }
 .particles {
   position: absolute;

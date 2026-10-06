@@ -36,8 +36,8 @@ func TestHistoryReloadAndMigration(t *testing.T) {
 	c := newApp()
 	c.startup(context.Background())
 	defer c.shutdown(context.Background())
-	if c.warning != "" || len(c.engine.History) != 0 {
-		t.Fatal("old data failed migration")
+	if c.warning != "Histórico recuperado da cópia de segurança." || len(c.engine.History) != 1 {
+		t.Fatal("old data failed migration or history recovery")
 	}
 }
 
@@ -203,5 +203,86 @@ func TestTimerDeepWorkSelectionPersists(t *testing.T) {
 	defer b.shutdown(context.Background())
 	if !b.engine.TimerDeepWork {
 		t.Fatal("timer session type was not restored")
+	}
+}
+
+func TestHistoryBackupRestoresMissingEntries(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("APPDATA", dir)
+	t.Setenv("XDG_CONFIG_HOME", dir)
+	a := newApp()
+	a.startup(context.Background())
+	start := time.Date(2026, 10, 5, 9, 0, 0, 0, time.Local)
+	a.engine.History = append(a.engine.History, Activity{
+		Start: start, End: start.Add(25 * time.Minute), Mode: "pomodoro", Focus: true, Completed: true,
+	})
+	a.save()
+	a.save()
+	a.engine.History = append(a.engine.History, Activity{
+		Start: start.Add(time.Hour), End: start.Add(85 * time.Minute), Mode: "timer", Focus: true,
+	})
+	a.save()
+	a.save()
+	a.shutdown(context.Background())
+	data, err := os.ReadFile(a.path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var saved map[string]json.RawMessage
+	if err := json.Unmarshal(data, &saved); err != nil {
+		t.Fatal(err)
+	}
+	saved["history"] = json.RawMessage("[]")
+	data, err = json.Marshal(saved)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(a.path, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	b := newApp()
+	b.startup(context.Background())
+	defer b.shutdown(context.Background())
+	if len(b.engine.History) != 2 || !b.engine.History[0].Completed {
+		t.Fatal("missing history was not restored from backup")
+	}
+}
+
+func TestHistoryOnDiskCannotBeOverwrittenByEmptyState(t *testing.T) {
+	path := t.TempDir() + "/data.json"
+	a := newApp()
+	a.path = path
+	a.engine.History = []Activity{{Start: time.Now().Add(-time.Minute), End: time.Now(), Mode: "timer", Focus: true}}
+	a.save()
+	b := newApp()
+	b.path = path
+	b.save()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var saved struct{ History []Activity }
+	if err := json.Unmarshal(data, &saved); err != nil || len(saved.History) != 1 || !b.dataReadOnly {
+		t.Fatal("existing history was overwritten")
+	}
+}
+
+func TestInvalidSavedDataIsPreserved(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("APPDATA", dir)
+	t.Setenv("XDG_CONFIG_HOME", dir)
+	path := dir + "/pomodoro/data.json"
+	if err := os.MkdirAll(dir+"/pomodoro", 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("invalid json"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	a := newApp()
+	a.startup(context.Background())
+	a.shutdown(context.Background())
+	data, err := os.ReadFile(path)
+	if err != nil || string(data) != "invalid json" {
+		t.Fatal("invalid saved data was overwritten")
 	}
 }

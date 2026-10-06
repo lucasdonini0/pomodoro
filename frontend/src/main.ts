@@ -157,11 +157,9 @@ function render() {
   });
   $("#tasks-section").hidden = historyOpen || alarmsOpen || state.mode !== "pomodoro";
   $("#timer-options").hidden = historyOpen || alarmsOpen || state.mode !== "timer";
-  document.querySelectorAll<HTMLButtonElement>("[data-timer-work]").forEach((button) => {
-    const active = (button.dataset.timerWork === "deep") === state.timerDeepWork;
-    button.classList.toggle("active", active);
-    button.setAttribute("aria-pressed", String(active));
-  });
+  const timerWorkSwitch = $('[data-action="timer-work-toggle"]');
+  timerWorkSwitch.classList.toggle("deep", state.timerDeepWork);
+  timerWorkSwitch.setAttribute("aria-checked", String(state.timerDeepWork));
   $("#stopwatch-note").hidden = historyOpen || alarmsOpen || state.mode !== "stopwatch";
   document
     .querySelectorAll<HTMLElement>("[data-seconds]")
@@ -271,10 +269,6 @@ document.addEventListener("click", async (event) => {
     await command("timer", "", Number(target.dataset.seconds));
     return;
   }
-  if (target.dataset.timerWork) {
-    await command("timer-work", target.dataset.timerWork);
-    return;
-  }
   const action =
     target.dataset.action === "time-picker" && state.mode === "pomodoro"
       ? "settings"
@@ -290,6 +284,10 @@ document.addEventListener("click", async (event) => {
     historyOpen = false;
     alarmsOpen = true;
     render();
+    return;
+  }
+  if (action === "timer-work-toggle") {
+    await command("timer-work", state.timerDeepWork ? "normal" : "deep");
     return;
   }
   if (action === "compact") { historyOpen = false; alarmsOpen = false; }
