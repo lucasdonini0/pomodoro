@@ -153,3 +153,55 @@ func TestHistoryDurationChange(t *testing.T) {
 		t.Fatal("duration change merged sessions")
 	}
 }
+
+func TestTimerDeepWorkOnlyCountsItsOwnMinutes(t *testing.T) {
+	e := newEngine()
+	now := time.Date(2026, 10, 6, 9, 0, 0, 0, time.Local)
+	if err := e.command("mode", "timer", 0, now); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.command("toggle", "", 0, now); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.command("timer-work", "deep", 0, now.Add(2*time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.command("timer-work", "normal", 0, now.Add(3*time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	e.advance(now.Add(5 * time.Minute))
+	if len(e.History) != 3 {
+		t.Fatalf("want three segments, got %d", len(e.History))
+	}
+	wantDuration := []time.Duration{2 * time.Minute, time.Minute, 2 * time.Minute}
+	wantFocus := []bool{false, true, false}
+	for i, entry := range e.History {
+		if entry.End.Sub(entry.Start) != wantDuration[i] || entry.Focus != wantFocus[i] || entry.Completed {
+			t.Fatalf("segment %d: %+v", i, entry)
+		}
+	}
+	if e.Bell != 1 || e.Clocks["timer"].Running {
+		t.Fatal("switching session type changed timer completion")
+	}
+}
+
+func TestTimerDeepWorkSelectionPersists(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("APPDATA", dir)
+	t.Setenv("XDG_CONFIG_HOME", dir)
+	a := newApp()
+	a.startup(context.Background())
+	if err := a.Command("mode", "timer", 0); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.Command("timer-work", "deep", 0); err != nil {
+		t.Fatal(err)
+	}
+	a.shutdown(context.Background())
+	b := newApp()
+	b.startup(context.Background())
+	defer b.shutdown(context.Background())
+	if !b.engine.TimerDeepWork {
+		t.Fatal("timer session type was not restored")
+	}
+}

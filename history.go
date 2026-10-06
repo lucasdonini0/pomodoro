@@ -44,7 +44,7 @@ func (e *Engine) record(now time.Time) {
 		}
 	}
 	if e.active < 0 {
-		e.History = append(e.History, Activity{Start: c.anchor, End: c.anchor, Mode: e.Mode, Focus: e.Mode == "pomodoro" && e.Phase == "focus"})
+		e.History = append(e.History, Activity{Start: c.anchor, End: c.anchor, Mode: e.Mode, Focus: (e.Mode == "pomodoro" && e.Phase == "focus") || (e.Mode == "timer" && e.TimerDeepWork)})
 		e.active = len(e.History) - 1
 	}
 	entry := &e.History[e.active]
@@ -57,7 +57,7 @@ func (e *Engine) finish(now time.Time, completed bool) {
 	e.record(now)
 	if e.active >= 0 {
 		entry := &e.History[e.active]
-		entry.Completed = completed && entry.Focus
+		entry.Completed = completed && entry.Mode == "pomodoro" && entry.Focus
 	}
 	e.active = -1
 }

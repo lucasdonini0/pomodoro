@@ -130,7 +130,7 @@ export function setupHistory(api: API) {
           .reverse()
           .map(
             (s) =>
-              `<div class="history-session"><span>${timeLabel(new Date(s.start))}–${timeLabel(new Date(s.stop))}<small>${s.focus ? "Foco" : s.mode === "timer" ? "Timer" : "Stopwatch"}${s.completed ? " · concluído" : ""}</small></span><strong>${duration(s.seconds)}</strong></div>`,
+              `<div class="history-session"><span>${timeLabel(new Date(s.start))}–${timeLabel(new Date(s.stop))}<small>${s.mode === "timer" ? s.focus ? "Timer · Deep Work" : "Timer" : s.focus ? "Foco" : "Stopwatch"}${s.completed ? " · concluído" : ""}</small></span><strong>${duration(s.seconds)}</strong></div>`,
           )
           .join("")
       : '<p class="history-empty">Nenhuma sessão neste dia.</p>';

@@ -108,7 +108,7 @@ function render() {
           state.phase
         ] || "Foco"
       : state.mode === "timer"
-        ? "Timer"
+        ? state.timerDeepWork ? "Deep Work" : "Timer"
         : "Stopwatch";
   $("#phase").textContent =
     state.mode === "pomodoro"
@@ -157,6 +157,11 @@ function render() {
   });
   $("#tasks-section").hidden = historyOpen || alarmsOpen || state.mode !== "pomodoro";
   $("#timer-options").hidden = historyOpen || alarmsOpen || state.mode !== "timer";
+  document.querySelectorAll<HTMLButtonElement>("[data-timer-work]").forEach((button) => {
+    const active = (button.dataset.timerWork === "deep") === state.timerDeepWork;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
   $("#stopwatch-note").hidden = historyOpen || alarmsOpen || state.mode !== "stopwatch";
   document
     .querySelectorAll<HTMLElement>("[data-seconds]")
@@ -264,6 +269,10 @@ document.addEventListener("click", async (event) => {
   }
   if (target.dataset.seconds) {
     await command("timer", "", Number(target.dataset.seconds));
+    return;
+  }
+  if (target.dataset.timerWork) {
+    await command("timer-work", target.dataset.timerWork);
     return;
   }
   const action =

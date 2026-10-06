@@ -403,6 +403,27 @@ input::placeholder {
   gap: 7px;
   margin: 13px 0 20px;
 }
+.timer-work-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 3px;
+  margin-top: 12px;
+}
+.timer-work-switch button {
+  border-radius: 3px;
+  padding: 10px 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.timer-work-switch button.active {
+  background: var(--accent);
+  color: #fff;
+}
+.timer-work-hint {
+  margin: 7px 0 22px;
+}
 .presets button {
   border: 1px solid var(--line);
   border-radius: 4px;
@@ -636,6 +657,9 @@ h2 {
 }
 .dark .primary:hover {
   background: #d1bfe8;
+}
+.dark .timer-work-switch button.active {
+  color: #241633;
 }
 .particles {
   position: absolute;

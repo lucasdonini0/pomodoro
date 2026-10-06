@@ -30,6 +30,7 @@ export type State = {
   tasks: Task[];
   selected: string;
   mode: Mode;
+  timerDeepWork: boolean;
   phase: string;
   round: number;
   seconds: number;

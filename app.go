@@ -62,17 +62,19 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 	var saved struct {
-		Settings Settings
-		Tasks    []Task
-		Selected string
-		History  []Activity
-		Alarms   []Alarm
+		Settings      Settings
+		Tasks         []Task
+		Selected      string
+		History       []Activity
+		Alarms        []Alarm
+		TimerDeepWork bool
 	}
 	if json.Unmarshal(data, &saved) != nil || !saved.Settings.valid() {
 		a.warning = "Os dados salvos estão inválidos."
 		return
 	}
 	a.engine.Settings, a.engine.Selected = saved.Settings, saved.Selected
+	a.engine.TimerDeepWork = saved.TimerDeepWork
 	if saved.History != nil {
 		a.engine.History = saved.History
 	}
@@ -93,12 +95,13 @@ func (a *App) save() {
 		return
 	}
 	data, err := json.MarshalIndent(struct {
-		Settings Settings   `json:"settings"`
-		Tasks    []Task     `json:"tasks"`
-		Selected string     `json:"selected"`
-		History  []Activity `json:"history"`
-		Alarms   []Alarm    `json:"alarms"`
-	}{a.engine.Settings, a.engine.Tasks, a.engine.Selected, a.engine.History, a.alarms}, "", "  ")
+		Settings      Settings   `json:"settings"`
+		Tasks         []Task     `json:"tasks"`
+		Selected      string     `json:"selected"`
+		History       []Activity `json:"history"`
+		Alarms        []Alarm    `json:"alarms"`
+		TimerDeepWork bool       `json:"timerDeepWork"`
+	}{a.engine.Settings, a.engine.Tasks, a.engine.Selected, a.engine.History, a.alarms, a.engine.TimerDeepWork}, "", "  ")
 	if err == nil {
 		err = os.MkdirAll(filepath.Dir(a.path), 0700)
 	}
