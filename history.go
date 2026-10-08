@@ -44,7 +44,10 @@ func (e *Engine) record(now time.Time) {
 		}
 	}
 	if e.active < 0 {
-		e.History = append(e.History, Activity{Start: c.anchor, End: c.anchor, Mode: e.Mode, Focus: (e.Mode == "pomodoro" && e.Phase == "focus") || (e.Mode == "timer" && e.TimerDeepWork)})
+		focus := (e.Mode == "pomodoro" && e.Phase == "focus") ||
+			(e.Mode == "timer" && e.TimerDeepWork) ||
+			(e.Mode == "stopwatch" && e.StopwatchDeepWork)
+		e.History = append(e.History, Activity{Start: c.anchor, End: c.anchor, Mode: e.Mode, Focus: focus})
 		e.active = len(e.History) - 1
 	}
 	entry := &e.History[e.active]

@@ -109,7 +109,7 @@ function render() {
         ] || "Foco"
       : state.mode === "timer"
         ? state.timerDeepWork ? "Deep Work" : "Timer"
-        : "Stopwatch";
+        : state.stopwatchDeepWork ? "Deep Work" : "Stopwatch";
   $("#phase").textContent =
     state.mode === "pomodoro"
       ? `${state.round}/${state.settings.rounds}`
@@ -157,9 +157,11 @@ function render() {
   });
   $("#tasks-section").hidden = historyOpen || alarmsOpen || state.mode !== "pomodoro";
   $("#timer-options").hidden = historyOpen || alarmsOpen || state.mode !== "timer";
-  const timerWorkSwitch = $('[data-action="timer-work-toggle"]');
-  timerWorkSwitch.classList.toggle("deep", state.timerDeepWork);
-  timerWorkSwitch.setAttribute("aria-checked", String(state.timerDeepWork));
+  $("#session-options").hidden = historyOpen || alarmsOpen || state.mode === "pomodoro";
+  const deepWork = state.mode === "stopwatch" ? state.stopwatchDeepWork : state.timerDeepWork;
+  const workSwitch = $('[data-action="session-work-toggle"]');
+  workSwitch.classList.toggle("deep", deepWork);
+  workSwitch.setAttribute("aria-checked", String(deepWork));
   $("#stopwatch-note").hidden = historyOpen || alarmsOpen || state.mode !== "stopwatch";
   document
     .querySelectorAll<HTMLElement>("[data-seconds]")
@@ -286,8 +288,9 @@ document.addEventListener("click", async (event) => {
     render();
     return;
   }
-  if (action === "timer-work-toggle") {
-    await command("timer-work", state.timerDeepWork ? "normal" : "deep");
+  if (action === "session-work-toggle") {
+    const deepWork = state.mode === "stopwatch" ? state.stopwatchDeepWork : state.timerDeepWork;
+    await command(`${state.mode}-work`, deepWork ? "normal" : "deep");
     return;
   }
   if (action === "compact") { historyOpen = false; alarmsOpen = false; }

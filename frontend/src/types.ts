@@ -31,6 +31,7 @@ export type State = {
   selected: string;
   mode: Mode;
   timerDeepWork: boolean;
+  stopwatchDeepWork: boolean;
   phase: string;
   round: number;
   seconds: number;

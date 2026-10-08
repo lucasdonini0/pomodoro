@@ -403,14 +403,14 @@ input::placeholder {
   gap: 7px;
   margin: 13px 0 20px;
 }
-.timer-work-row {
+.session-work-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   margin: 0 0 22px;
 }
-.timer-work-switch {
+.session-work-switch {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -419,12 +419,12 @@ input::placeholder {
   font-size: 11px;
   color: var(--muted);
 }
-.timer-work-switch.deep > span:last-child,
-.timer-work-switch:not(.deep) > span:first-child {
+.session-work-switch.deep > span:last-child,
+.session-work-switch:not(.deep) > span:first-child {
   color: var(--ink);
   font-weight: 600;
 }
-.timer-work-track {
+.session-work-track {
   width: 36px;
   height: 20px;
   flex: none;
@@ -433,7 +433,7 @@ input::placeholder {
   padding: 2px;
   transition: background 0.18s ease;
 }
-.timer-work-thumb {
+.session-work-thumb {
   display: block;
   width: 16px;
   height: 16px;
@@ -442,10 +442,10 @@ input::placeholder {
   box-shadow: 0 1px 3px #0003;
   transition: transform 0.18s ease;
 }
-.timer-work-switch.deep .timer-work-track {
+.session-work-switch.deep .session-work-track {
   background: var(--accent);
 }
-.timer-work-switch.deep .timer-work-thumb {
+.session-work-switch.deep .session-work-thumb {
   transform: translateX(16px);
 }
 .presets button {

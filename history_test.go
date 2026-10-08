@@ -185,24 +185,60 @@ func TestTimerDeepWorkOnlyCountsItsOwnMinutes(t *testing.T) {
 	}
 }
 
-func TestTimerDeepWorkSelectionPersists(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("APPDATA", dir)
-	t.Setenv("XDG_CONFIG_HOME", dir)
-	a := newApp()
-	a.startup(context.Background())
-	if err := a.Command("mode", "timer", 0); err != nil {
-		t.Fatal(err)
+func TestStopwatchDeepWorkOnlyCountsItsOwnMinutes(t *testing.T) {
+	e := newEngine()
+	now := time.Date(2026, 10, 8, 9, 0, 0, 0, time.Local)
+	for _, step := range []struct {
+		action, value string
+		minutes       int
+	}{
+		{"mode", "stopwatch", 0},
+		{"toggle", "", 0},
+		{"stopwatch-work", "deep", 2},
+		{"stopwatch-work", "normal", 3},
+	} {
+		if err := e.command(step.action, step.value, 0, now.Add(time.Duration(step.minutes)*time.Minute)); err != nil {
+			t.Fatal(err)
+		}
 	}
-	if err := a.Command("timer-work", "deep", 0); err != nil {
-		t.Fatal(err)
+	e.advance(now.Add(5 * time.Minute))
+	if len(e.History) != 3 {
+		t.Fatalf("want three segments, got %d", len(e.History))
 	}
-	a.shutdown(context.Background())
-	b := newApp()
-	b.startup(context.Background())
-	defer b.shutdown(context.Background())
-	if !b.engine.TimerDeepWork {
-		t.Fatal("timer session type was not restored")
+	wantDuration := []time.Duration{2 * time.Minute, time.Minute, 2 * time.Minute}
+	wantFocus := []bool{false, true, false}
+	for i, entry := range e.History {
+		if entry.Mode != "stopwatch" || entry.End.Sub(entry.Start) != wantDuration[i] || entry.Focus != wantFocus[i] || entry.Completed {
+			t.Fatalf("segment %d: %+v", i, entry)
+		}
+	}
+	if e.Bell != 0 || e.Starts != 1 || !e.Clocks["stopwatch"].Running || e.Clocks["stopwatch"].elapsed(now.Add(5*time.Minute)) != 300 {
+		t.Fatal("switching session type interrupted or reset the stopwatch")
+	}
+}
+
+func TestSessionDeepWorkSelectionsPersistIndependently(t *testing.T) {
+	for _, mode := range []string{"timer", "stopwatch"} {
+		t.Run(mode, func(t *testing.T) {
+			dir := t.TempDir()
+			t.Setenv("APPDATA", dir)
+			t.Setenv("XDG_CONFIG_HOME", dir)
+			a := newApp()
+			a.startup(context.Background())
+			if err := a.Command("mode", mode, 0); err != nil {
+				t.Fatal(err)
+			}
+			if err := a.Command(mode+"-work", "deep", 0); err != nil {
+				t.Fatal(err)
+			}
+			a.shutdown(context.Background())
+			b := newApp()
+			b.startup(context.Background())
+			defer b.shutdown(context.Background())
+			if b.engine.TimerDeepWork != (mode == "timer") || b.engine.StopwatchDeepWork != (mode == "stopwatch") {
+				t.Fatal("session types were not restored independently")
+			}
+		})
 	}
 }
 

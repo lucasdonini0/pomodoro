@@ -64,12 +64,13 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 	var saved struct {
-		Settings      Settings
-		Tasks         []Task
-		Selected      string
-		History       []Activity
-		Alarms        []Alarm
-		TimerDeepWork bool
+		Settings          Settings
+		Tasks             []Task
+		Selected          string
+		History           []Activity
+		Alarms            []Alarm
+		TimerDeepWork     bool
+		StopwatchDeepWork bool
 	}
 	if json.Unmarshal(data, &saved) != nil || !saved.Settings.valid() {
 		a.warning = "Os dados salvos estão inválidos e foram preservados."
@@ -87,6 +88,7 @@ func (a *App) startup(ctx context.Context) {
 	}
 	a.engine.Settings, a.engine.Selected = saved.Settings, saved.Selected
 	a.engine.TimerDeepWork = saved.TimerDeepWork
+	a.engine.StopwatchDeepWork = saved.StopwatchDeepWork
 	if saved.History != nil {
 		a.engine.History = saved.History
 	}
@@ -107,13 +109,14 @@ func (a *App) save() {
 		return
 	}
 	data, err := json.MarshalIndent(struct {
-		Settings      Settings   `json:"settings"`
-		Tasks         []Task     `json:"tasks"`
-		Selected      string     `json:"selected"`
-		History       []Activity `json:"history"`
-		Alarms        []Alarm    `json:"alarms"`
-		TimerDeepWork bool       `json:"timerDeepWork"`
-	}{a.engine.Settings, a.engine.Tasks, a.engine.Selected, a.engine.History, a.alarms, a.engine.TimerDeepWork}, "", "  ")
+		Settings          Settings   `json:"settings"`
+		Tasks             []Task     `json:"tasks"`
+		Selected          string     `json:"selected"`
+		History           []Activity `json:"history"`
+		Alarms            []Alarm    `json:"alarms"`
+		TimerDeepWork     bool       `json:"timerDeepWork"`
+		StopwatchDeepWork bool       `json:"stopwatchDeepWork"`
+	}{a.engine.Settings, a.engine.Tasks, a.engine.Selected, a.engine.History, a.alarms, a.engine.TimerDeepWork, a.engine.StopwatchDeepWork}, "", "  ")
 	if err == nil {
 		var previous []byte
 		previous, err = os.ReadFile(a.path)

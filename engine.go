@@ -34,18 +34,19 @@ type Clock struct {
 }
 
 type Engine struct {
-	Settings      Settings          `json:"settings"`
-	Tasks         []Task            `json:"tasks"`
-	Selected      string            `json:"selected"`
-	Mode          string            `json:"mode"`
-	TimerDeepWork bool              `json:"timerDeepWork"`
-	Phase         string            `json:"phase"`
-	Round         int               `json:"round"`
-	Clocks        map[string]*Clock `json:"clocks"`
-	Bell          int               `json:"bell"`
-	Starts        int               `json:"starts"`
-	History       []Activity        `json:"-"`
-	active        int
+	Settings          Settings          `json:"settings"`
+	Tasks             []Task            `json:"tasks"`
+	Selected          string            `json:"selected"`
+	Mode              string            `json:"mode"`
+	TimerDeepWork     bool              `json:"timerDeepWork"`
+	StopwatchDeepWork bool              `json:"stopwatchDeepWork"`
+	Phase             string            `json:"phase"`
+	Round             int               `json:"round"`
+	Clocks            map[string]*Clock `json:"clocks"`
+	Bell              int               `json:"bell"`
+	Starts            int               `json:"starts"`
+	History           []Activity        `json:"-"`
+	active            int
 }
 
 func newEngine() *Engine {
@@ -161,19 +162,23 @@ func (e *Engine) command(action, value string, seconds int, now time.Time) error
 			e.finish(now, false)
 		}
 		e.Clocks["timer"] = &Clock{Duration: float64(seconds)}
-	case "timer-work":
-		if e.Mode != "timer" || (value != "normal" && value != "deep") {
-			return errors.New("Modo do timer inválido")
+	case "timer-work", "stopwatch-work":
+		mode, selected := "timer", &e.TimerDeepWork
+		if action == "stopwatch-work" {
+			mode, selected = "stopwatch", &e.StopwatchDeepWork
+		}
+		if e.Mode != mode || (value != "normal" && value != "deep") {
+			return errors.New("Tipo de sessão inválido")
 		}
 		deep := value == "deep"
-		if deep == e.TimerDeepWork {
+		if deep == *selected {
 			return nil
 		}
 		if c.Running {
 			e.finish(now, false)
 			c.Elapsed, c.anchor = c.elapsed(now), now
 		}
-		e.TimerDeepWork = deep
+		*selected = deep
 	case "duration":
 		if e.Mode == "stopwatch" || value != e.Mode+":"+e.Phase {
 			return errors.New("A etapa mudou. Abra o seletor novamente")
