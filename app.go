@@ -33,13 +33,14 @@ type App struct {
 
 type Snapshot struct {
 	*Engine
-	Seconds     float64 `json:"seconds"`
-	Progress    float64 `json:"progress"`
-	Compact     bool    `json:"compact"`
-	Pinned      bool    `json:"pinned"`
-	Warning     string  `json:"warning"`
-	Alarms      []Alarm `json:"alarms"`
-	ActiveAlarm *Alarm  `json:"activeAlarm"`
+	Seconds     float64    `json:"seconds"`
+	Progress    float64    `json:"progress"`
+	Compact     bool       `json:"compact"`
+	Pinned      bool       `json:"pinned"`
+	Warning     string     `json:"warning"`
+	Alarms      []Alarm    `json:"alarms"`
+	ActiveAlarm *Alarm     `json:"activeAlarm"`
+	TimerEndsAt *time.Time `json:"timerEndsAt"`
 }
 
 func newApp() *App {
@@ -236,7 +237,7 @@ func (a *App) State() Snapshot {
 		value := *a.activeAlarm
 		active = &value
 	}
-	return Snapshot{&copy, seconds, progress, a.compact, a.pinned, a.warning, slices.Clone(a.alarms), active}
+	return Snapshot{&copy, seconds, progress, a.compact, a.pinned, a.warning, slices.Clone(a.alarms), active, a.engine.Clocks["timer"].endsAt(now)}
 }
 
 func (a *App) Command(action, value string, seconds int) error {

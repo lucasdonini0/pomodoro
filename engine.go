@@ -70,6 +70,18 @@ func (c *Clock) pause(now time.Time) {
 	c.Running = false
 }
 
+func (c *Clock) endsAt(now time.Time) *time.Time {
+	remaining := c.Duration - c.elapsed(now)
+	if remaining <= 0 {
+		return nil
+	}
+	end := now.Add(time.Duration(remaining * float64(time.Second)))
+	if c.Running {
+		end = c.anchor.Add(time.Duration((c.Duration - c.Elapsed) * float64(time.Second)))
+	}
+	return &end
+}
+
 func (e *Engine) advance(now time.Time) {
 	e.record(now)
 	c := e.Clocks[e.Mode]
@@ -162,6 +174,21 @@ func (e *Engine) command(action, value string, seconds int, now time.Time) error
 			e.finish(now, false)
 		}
 		e.Clocks["timer"] = &Clock{Duration: float64(seconds)}
+	case "timer-until":
+		if e.Mode != "timer" {
+			return errors.New("Abra o Timer para escolher o horário")
+		}
+		chosen, err := time.Parse("15:04", value)
+		if err != nil || len(value) != 5 {
+			return errors.New("Escolha um horário válido")
+		}
+		end := time.Date(now.Year(), now.Month(), now.Day(), chosen.Hour(), chosen.Minute(), 0, 0, now.Location())
+		if !end.After(now) {
+			end = end.AddDate(0, 0, 1)
+		}
+		e.finish(now, false)
+		e.Clocks["timer"] = &Clock{Duration: end.Sub(now).Seconds(), Running: true, Started: true, anchor: now}
+		e.Starts++
 	case "timer-work", "stopwatch-work":
 		mode, selected := "timer", &e.TimerDeepWork
 		if action == "stopwatch-work" {

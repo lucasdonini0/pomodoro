@@ -35,6 +35,7 @@ export type State = {
   phase: string;
   round: number;
   seconds: number;
+  timerEndsAt: string | null;
   progress: number;
   bell: number;
   starts: number;

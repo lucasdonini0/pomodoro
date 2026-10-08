@@ -79,6 +79,25 @@ function format(seconds: number, stopwatch = false) {
   return `${h ? `${String(h).padStart(2, "0")}:` : ""}${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+const clockTime = (date: Date) =>
+  date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+function updateTimerUntilPreview() {
+  const data = new FormData($<HTMLFormElement>("#timer-until-form"));
+  const now = new Date();
+  const end = new Date(now);
+  end.setHours(Number(data.get("hours")), Number(data.get("minutes")), 0, 0);
+  if (end <= now) end.setDate(end.getDate() + 1);
+  const totalMinutes = Math.ceil((+end - +now) / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const duration = hours
+    ? `${hours}h${minutes ? ` ${minutes}min` : ""}`
+    : `${minutes}min`;
+  $("#timer-until-preview").textContent =
+    `Em ${duration}${end.toDateString() !== now.toDateString() ? " · amanhã" : ""}`;
+}
+
 function chime() {
   if (state.settings.sound) completedSound(state.settings.volume);
 }
@@ -119,6 +138,15 @@ function render() {
   $<HTMLButtonElement>("#time").disabled = state.mode === "stopwatch";
   $("#mini-time").textContent = time;
   $("#time").classList.toggle("hours", time.length > 5);
+  const timerEnd = state.timerEndsAt ? new Date(state.timerEndsAt) : null;
+  $("#timer-end").hidden = historyOpen || alarmsOpen || state.mode !== "timer";
+  $("#timer-end-label").textContent = timerEnd
+    ? `Toca às ${clockTime(timerEnd)}${timerEnd.toDateString() !== new Date().toDateString() ? " · amanhã" : ""}`
+    : "Definir horário";
+  $("#timer-end").title = state.clocks.timer.running
+    ? "Escolher o horário para tocar"
+    : "Horário previsto ao iniciar ou continuar";
+  if ($<HTMLDialogElement>("#timer-until-dialog").open) updateTimerUntilPreview();
   $("#mini-phase").textContent =
     state.mode === "pomodoro"
       ? `${state.round}/${state.settings.rounds}`
@@ -307,6 +335,22 @@ document.addEventListener("click", async (event) => {
     await run(() => api.RemoveAlarm(target.closest<HTMLElement>("[data-alarm-id]")!.dataset.alarmId!));
     return;
   }
+  if (action === "timer-until") {
+    if (state.mode !== "timer") return;
+    const end = state.timerEndsAt
+      ? new Date(state.timerEndsAt)
+      : new Date(Date.now() + state.clocks.timer.duration * 1000);
+    const form = $<HTMLFormElement>("#timer-until-form");
+    (form.elements.namedItem("hours") as HTMLSelectElement).value = String(end.getHours()).padStart(2, "0");
+    (form.elements.namedItem("minutes") as HTMLSelectElement).value = String(end.getMinutes()).padStart(2, "0");
+    updateTimerUntilPreview();
+    $<HTMLDialogElement>("#timer-until-dialog").showModal();
+    return;
+  }
+  if (action === "close-timer-until") {
+    $<HTMLDialogElement>("#timer-until-dialog").close();
+    return;
+  }
   if (action === "time-picker") {
     if (state.mode === "stopwatch") return;
     const seconds = Math.round(state.clocks[state.mode].duration);
@@ -460,6 +504,15 @@ $("#time-form").addEventListener("submit", (event) => {
       seconds,
     );
     $<HTMLDialogElement>("#time-dialog").close();
+  });
+});
+$("#timer-until-form").addEventListener("input", updateTimerUntilPreview);
+$("#timer-until-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const data = new FormData(event.target as HTMLFormElement);
+  void run(async () => {
+    await api.Command("timer-until", `${data.get("hours")}:${data.get("minutes")}`, 0);
+    $<HTMLDialogElement>("#timer-until-dialog").close();
   });
 });
 document.addEventListener("keydown", (event) => {

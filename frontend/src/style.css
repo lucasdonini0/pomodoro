@@ -197,6 +197,21 @@ nav .active:after {
 #subtitle.fading {
   opacity: 0;
 }
+.timer-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.timer-end svg {
+  width: 12px;
+  height: 12px;
+}
 #time {
   padding: 0;
   display: block;
